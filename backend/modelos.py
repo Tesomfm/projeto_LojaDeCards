@@ -6,5 +6,5 @@ class Carta(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nome = Column(String, nullable=False)
-    atk = Column(int, default=0)
-    Def = Column(int, default=0)
+    atk = Column(Integer, default=0)
+    Def = Column(Integer, default=0)

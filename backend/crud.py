@@ -41,9 +41,10 @@ def substituir_carta(db: Session, carta_id: int, dados: CriarCarta):
 
 def deletar_carta(db: Session, carta_id: int):
     carta = buscar_carta(db, carta_id)
+    print(carta)
     if carta:
         db.delete(carta)
         db.commit()
     else:
-       HTTPException(status_code=404, detail=f"Carta {carta_id} nao encontrada para deletar.")
+       raise HTTPException(status_code=404, detail=f"Carta {carta_id} nao encontrada para deletar.")
     return carta
