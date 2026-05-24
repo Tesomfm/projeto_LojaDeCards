@@ -1,1 +1,1 @@
-nadhnsuhsaçkjakjbsvciojusdfiaslkmasdpsdfhjbsdfhjdczx masokasdhwerlokasduhjweryuasdnjlsdfyuiwefkjbs\iojahjbasdj
+tutorial avançado de criar uma loja online de cartas hehehe
