@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from modelos import Carta
-from schemas import CriarCarta, CartaUpdate
+from modelos_cartas import Carta
+from schemas_cartas import CriarCarta, CartaUpdate
 
 def listar_cartas(db: Session):
     return db.query(Carta).all()
