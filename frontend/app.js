@@ -149,7 +149,7 @@ async function listarClientes() {
         const resposta = await fetch(API_CLIENTES);
 
         if (!resposta.ok) {
-            throw new Error("Erro ao carregar clientes");
+            throw new Error("Servidor não respondeu");
         }
 
         const clientes = await resposta.json();
@@ -160,15 +160,121 @@ async function listarClientes() {
                 <tr>
                     <td>${cliente.id}</td>
                     <td>${cliente.nome}</td>
-                    <td>R$ ${parseFloat(cliente.preco).toFixed(2)}</td> <td>${cliente.quantidade}</td> <td>
-                        <a href="editar-cliente.html" class="btn btn-warning btn-sm">Editar</a>
-                        <button class="btn btn-danger btn-sm">Excluir</button>
+                    <td>${new Date(cliente.dataDeNascimento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</td>
+                    <td>${cliente.genero}</td>
+                    <td>
+                        <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">Excluir</button>
                     </td>
                 </tr>
             `;
         });
 
     } catch (erro) {
+        document.getElementById("erro").classList.remove("d-none");
+        document.getElementById("erro").innerText = erro.message;
+    }
+}
+
+async function criarCliente(event){
+    event.preventDefault();
+
+    const nome = document.getElementById("nome").value;
+    const dataDeNascimento = document.getElementById("dataDeNascimento").value;
+    const genero = document.getElementById("genero").value;
+
+    try {
+        const resposta = await fetch(API_CLIENTES, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome: nome,
+                dataDeNascimento: dataDeNascimento,
+                genero: genero
+            })
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao salvar cliente");
+        }
+
+        const cliente = await resposta.json();
+        alert(`Cliente criado com sucesso! ID: ${cliente.id}`);
+        window.location.href = "index.html";
+    } catch (erro) {
         alert(erro.message);
     }
+}
+
+async function carregarCliente(id) {
+    try {
+        const resposta = await fetch(`${API_CLIENTES}/${id}`);
+        if (!resposta.ok) throw new Error("Erro ao carregar cliente");
+
+        const cliente = await resposta.json();
+        document.getElementById("nome").value = cliente.nome;
+        document.getElementById("dataDeNascimento").value = cliente.dataDeNascimento;
+        document.getElementById("genero").value = cliente.genero;
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+async function editarCliente(id) {
+    const nome = document.getElementById("nome").value;
+    const dataDeNascimento = document.getElementById("dataDeNascimento").value;
+    const genero = document.getElementById("genero").value;
+
+    try {
+        const resposta = await fetch(`${API_CLIENTES}/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome: nome,
+                dataDeNascimento: dataDeNascimento,
+                genero: genero
+            })
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao atualizar cliente");
+        }
+
+        alert("Cliente atualizado com sucesso!");
+        window.location.href = "clientes.html";
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+async function deletarCliente(id) {
+    if (!confirm("Tem certeza que deseja excluir este cliente?")) {
+        return;
+    }
+
+    try {
+        const resposta = await fetch(`${API_CLIENTES}/${id}`, {
+            method: "DELETE"
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao excluir cliente");
+        }
+
+        alert("Cliente excluído com sucesso!");
+        listarClientes();
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+function formatarDataISO(isoString) {//arrumar a data para o BRASIL >:D
+    const [ano, mes, dia] = isoString.split("-");
+    return `${dia}/${mes}/${ano}`;
 }

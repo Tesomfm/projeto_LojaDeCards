@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String , Float, Numeric
+from sqlalchemy import Boolean, Column, Integer, String , Float
 from database import Base
 
 class Carta(Base):
