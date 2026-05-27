@@ -1,5 +1,6 @@
-const API_CARTAS = "http://localhost:8000/cartas";
-const API_CLIENTES = "http://localhost:8000/clientes";
+const API_CARTAS = "http://localhost:8000/carta";
+
+const API_CLIENTES = "http://localhost:8000/cliente";
 
 async function listarCartas() {
     const tabela = document.getElementById("tabelaCartas");
@@ -19,10 +20,10 @@ async function listarCartas() {
                 <tr>
                     <td>${carta.nome}</td>
                     <td>${carta.atk}</td>
-                    <td>${carta.def}</td>
+                    <td>${carta.Def}</td>
                     <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td> <td>${carta.quantidade}</td> <td>
                         <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
-                        <button class="btn btn-danger btn-sm">Excluir</button>
+                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button
                     </td>
                 </tr>
             `;
@@ -36,7 +37,109 @@ async function listarCartas() {
 
 async function criarCarta(event){
     event.preventDefault();
-    alert("Carta enviada para backend");
+
+    const nome = document.getElementById("nome").value;
+    const atk = parseInt(document.getElementById("atk").value);
+    const Def = parseInt(document.getElementById("Def").value);
+    const preco = parseFloat(document.getElementById("preco").value);
+    const quantidade = parseInt(document.getElementById("quantidade").value);
+
+    try {
+        const resposta = await fetch(API_CARTAS, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome: nome,
+                atk: atk,
+                Def: Def,
+                preco: preco,
+                quantidade: quantidade
+            })
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao salvar carta");
+        }
+
+        const carta = await resposta.json();
+        alert(`Carta criada com sucesso! ID: ${carta.id}`);
+        window.location.href = "index.html";
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+async function carregarCarta() {//para  carregar a carta na pagina
+        try {
+            const resposta = await fetch(`${API_CARTAS}/${id}`);
+            if (!resposta.ok) throw new Error("Erro ao carregar carta");
+
+            const carta = await resposta.json();
+            document.getElementById("nome").value = carta.nome;
+            document.getElementById("atk").value = carta.atk;
+            document.getElementById("Def").value = carta.Def;
+            document.getElementById("preco").value = carta.preco;
+            document.getElementById("quantidade").value = carta.quantidade;
+        } catch (erro) {
+            alert(erro.message);
+        }
+    }
+async function editarCarta(id) {
+    const nome = document.getElementById("nome").value;
+    const atk = parseInt(document.getElementById("atk").value);
+    const Def = parseInt(document.getElementById("Def").value);
+    const preco = parseFloat(document.getElementById("preco").value);
+    const quantidade = parseInt(document.getElementById("quantidade").value);
+
+    try {
+        const resposta = await fetch(`${API_CARTAS}/${id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                nome: nome,
+                atk: atk,
+                Def: Def,
+                preco: preco,
+                quantidade: quantidade
+            })
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao atualizar carta");
+        }
+
+        alert("Carta atualizada com sucesso!");
+        window.location.href = "index.html";
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+async function deletarCarta(id) {
+    if (!confirm("Tem certeza que deseja excluir esta carta?")) {
+        return;
+    }
+
+    try {
+        const resposta = await fetch(`${API_CARTAS}/${id}`, {
+            method: "DELETE"
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao excluir carta");
+        }
+
+        alert("Carta excluída com sucesso!");
+        listarCartas();
+    } catch (erro) {
+        alert(erro.message);
+    }
 }
 
 async function listarClientes() {
