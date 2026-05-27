@@ -1,5 +1,5 @@
 const API_CARTAS = "http://localhost:8000/cartas";
-const API_CLIENTES = "http://localhost:8000/clientes"; // Alterado para clientes
+const API_CLIENTES = "http://localhost:8000/clientes";
 
 async function listarCartas() {
     const tabela = document.getElementById("tabelaCartas");
@@ -19,8 +19,8 @@ async function listarCartas() {
                 <tr>
                     <td>${carta.nome}</td>
                     <td>${carta.atk}</td>
-                    <td>${carta.def}</td> <!-- Adicionado DEF na listagem -->
-                    <td>
+                    <td>${carta.def}</td>
+                    <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td> <td>${carta.quantidade}</td> <td>
                         <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
                         <button class="btn btn-danger btn-sm">Excluir</button>
                     </td>
@@ -39,7 +39,6 @@ async function criarCarta(event){
     alert("Carta enviada para backend");
 }
 
-// Substituído listarCategorias por listarClientes
 async function listarClientes() {
     const tabela = document.getElementById("tabelaClientes");
 
@@ -58,7 +57,7 @@ async function listarClientes() {
                 <tr>
                     <td>${cliente.id}</td>
                     <td>${cliente.nome}</td>
-                    <td>
+                    <td>R$ ${parseFloat(cliente.preco).toFixed(2)}</td> <td>${cliente.quantidade}</td> <td>
                         <a href="editar-cliente.html" class="btn btn-warning btn-sm">Editar</a>
                         <button class="btn btn-danger btn-sm">Excluir</button>
                     </td>
