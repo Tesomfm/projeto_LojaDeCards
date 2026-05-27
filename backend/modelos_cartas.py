@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy import Boolean, Column, Integer, String , Float
 from database import Base
 
 class Carta(Base):
@@ -8,3 +8,5 @@ class Carta(Base):
     nome = Column(String, nullable=False)
     atk = Column(Integer, default=0)
     Def = Column(Integer, default=0)
+    preco =Column(Float, default=0.0)
+    quantidade=Column(Integer,default=0)

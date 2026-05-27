@@ -35,6 +35,8 @@ def substituir_carta(db: Session, carta_id: int, dados: CriarCarta):
     carta.nome = dados.nome
     carta.atk = dados.atk
     carta.Def = dados.Def
+    carta.preco = dados.preco
+    carta.quantidade = dados.quantidade
     db.commit()
     db.refresh(carta)
     return carta
