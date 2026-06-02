@@ -8,10 +8,15 @@
 </head>
 <body>
 <div class="container mt-5">
-    <div class="d-flex justify-content-between">
+    <div class="d-flex justify-content-end mb-3" id="authArea">
+        </div>
+
+    <div class="d-flex justify-content-between align-items-center">
         <h1>Cartas Yu-Gi-Oh</h1>
-        <a href="clientes.html" class="btn btn-secondary">Clientes</a>
-        <a href="criar.html" class="btn btn-success">Nova Carta</a>
+        <div>
+            <a href="clientes.html" class="btn btn-secondary">Clientes</a>
+            <a href="criar.html" class="btn btn-success">Nova Carta</a>
+        </div>
     </div>
 
     <table class="table table-dark table-striped mt-4">
@@ -19,8 +24,10 @@
             <tr>
                 <th>Nome</th>
                 <th>ATK</th>
-                <th>defesa</th>
-                <th>Preço</th> <th>Quantidade</th> <th>Ações</th>
+                <th>Defesa</th>
+                <th>Preço</th>
+                <th>Quantidade</th>
+                <th>Ações</th>
             </tr>
         </thead>
         <tbody id="tabelaCartas"></tbody>
@@ -30,6 +37,9 @@
 </div>
 
 <script src="app.js"></script>
-<script>listarCartas();</script>
+<script>
+    atualizarInterfaceAutenticacao();
+    listarCartas();
+</script>
 </body>
 </html>
