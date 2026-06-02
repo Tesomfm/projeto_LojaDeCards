@@ -20,10 +20,10 @@ async function listarCartas() {
                 <tr>
                     <td>${carta.nome}</td>
                     <td>${carta.atk}</td>
-                    <td>${carta.Def}</td>
+                    <td>${carta.defesa}</td>
                     <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td> <td>${carta.quantidade}</td> <td>
                         <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
-                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button
+                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button>
                     </td>
                 </tr>
             `;
@@ -34,13 +34,12 @@ async function listarCartas() {
         document.getElementById("erro").innerText = erro.message;
     }
 }
-
 async function criarCarta(event){
     event.preventDefault();
 
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
-    const Def = parseInt(document.getElementById("Def").value);
+    const defesa = parseInt(document.getElementById("defesa").value);
     const preco = parseFloat(document.getElementById("preco").value);
     const quantidade = parseInt(document.getElementById("quantidade").value);
 
@@ -53,7 +52,7 @@ async function criarCarta(event){
             body: JSON.stringify({
                 nome: nome,
                 atk: atk,
-                Def: Def,
+                defesa: defesa,
                 preco: preco,
                 quantidade: quantidade
             })
@@ -79,7 +78,7 @@ async function carregarCarta() {//para  carregar a carta na pagina
             const carta = await resposta.json();
             document.getElementById("nome").value = carta.nome;
             document.getElementById("atk").value = carta.atk;
-            document.getElementById("Def").value = carta.Def;
+            document.getElementById("defesa").value = carta.defesa;
             document.getElementById("preco").value = carta.preco;
             document.getElementById("quantidade").value = carta.quantidade;
         } catch (erro) {
@@ -89,7 +88,7 @@ async function carregarCarta() {//para  carregar a carta na pagina
 async function editarCarta(id) {
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
-    const Def = parseInt(document.getElementById("Def").value);
+    const defesa = parseInt(document.getElementById("defesa").value);
     const preco = parseFloat(document.getElementById("preco").value);
     const quantidade = parseInt(document.getElementById("quantidade").value);
 
@@ -102,7 +101,7 @@ async function editarCarta(id) {
             body: JSON.stringify({
                 nome: nome,
                 atk: atk,
-                Def: Def,
+                defesa: defesa,
                 preco: preco,
                 quantidade: quantidade
             })
@@ -119,7 +118,6 @@ async function editarCarta(id) {
         alert(erro.message);
     }
 }
-
 async function deletarCarta(id) {
     if (!confirm("Tem certeza que deseja excluir esta carta?")) {
         return;
@@ -141,7 +139,6 @@ async function deletarCarta(id) {
         alert(erro.message);
     }
 }
-
 async function listarClientes() {
     const tabela = document.getElementById("tabelaClientes");
 
@@ -175,11 +172,12 @@ async function listarClientes() {
         document.getElementById("erro").innerText = erro.message;
     }
 }
-
 async function criarCliente(event){
     event.preventDefault();
 
     const nome = document.getElementById("nome").value;
+    const email = document.getElementById("email").value;
+    const senha = document.getElementById("senha").value;
     const dataDeNascimento = document.getElementById("dataDeNascimento").value;
     const genero = document.getElementById("genero").value;
 
@@ -191,19 +189,19 @@ async function criarCliente(event){
             },
             body: JSON.stringify({
                 nome: nome,
+                email: email,
+                senha: senha,
                 dataDeNascimento: dataDeNascimento,
                 genero: genero
             })
         });
-
         if (!resposta.ok) {
             const erro = await resposta.json();
             throw new Error(erro.detail || "Erro ao salvar cliente");
         }
-
         const cliente = await resposta.json();
-        alert(`Cliente criado com sucesso! ID: ${cliente.id}`);
-        window.location.href = "index.html";
+        alert("Cliente criado com sucesso! ID: " + cliente.id);
+        window.location.href = "clientes.html";
     } catch (erro) {
         alert(erro.message);
     }
@@ -273,8 +271,4 @@ async function deletarCliente(id) {
     } catch (erro) {
         alert(erro.message);
     }
-}
-function formatarDataISO(isoString) {//arrumar a data para o BRASIL >:D
-    const [ano, mes, dia] = isoString.split("-");
-    return `${dia}/${mes}/${ano}`;
 }
