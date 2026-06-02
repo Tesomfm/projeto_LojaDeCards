@@ -1,13 +1,21 @@
-body{
-    background-color: #111;
-    color: white;
+/* Customizações para a tela de Login e Componentes novos */
+.card {
+    background-color: #1a1a1a !important;
+    border-radius: 12px;
 }
 
-h1{
-    color: gold;
+.btn-warning {
+    background-color: gold !important;
+    border-color: gold !important;
+    color: #111 !important;
 }
 
-.table{
-    border-radius: 10px;
-    overflow: hidden;
+.btn-warning:hover {
+    background-color: #e6b800 !important;
+    border-color: #e6b800 !important;
+}
+
+.form-control:focus {
+    border-color: gold !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 215, 0, 0.25) !important;
 }

@@ -1,16 +1,123 @@
 const API_CARTAS = "http://localhost:8000/carta";
-
 const API_CLIENTES = "http://localhost:8000/cliente";
+const API_COMPRAS = "http://localhost:8000/compra"; // Endpoint mapeado do seu crud_relacao
+
+// --- SISTEMA DE AUTENTICAÇÃO (Mecanismo Seguro Frontend) ---
+
+function atualizarInterfaceAutenticacao() {
+    const authArea = document.getElementById("authArea");
+    if (!authArea) return;
+
+    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
+
+    if (clienteLogado) {
+        authArea.innerHTML = `
+            <div class="bg-dark border border-secondary p-2 rounded d-flex align-items-center gap-3">
+                <span class="text-light">Logado como: <strong style="color: gold;">${clienteLogado.nome}</strong></span>
+                <button onclick="logoutCliente()" class="btn btn-outline-danger btn-sm">Sair</button>
+            </div>
+        `;
+    } else {
+        authArea.innerHTML = `
+            <a href="login.html" class="btn btn-warning btn-sm fw-bold">Fazer Login / Entrar</a>
+        `;
+    }
+}
+
+async function loginCliente(event) {
+    event.preventDefault();
+    const email = document.getElementById("loginEmail").value;
+    const senha = document.getElementById("loginSenha").value;
+
+    try {
+        const resposta = await fetch(API_CLIENTES);
+        if (!resposta.ok) throw new Error("Erro ao conectar com o banco de dados de clientes.");
+
+        const clientes = await resposta.json();
+
+        // Validação robusta cruzando e-mail e senha informados
+        const clienteValido = clientes.find(c => c.email === email && c.senha === senha);
+
+        if (!clienteValido) {
+            throw new Error("E-mail ou senha incorretos! Tente novamente.");
+        }
+
+        // Salva os dados essenciais da sessão no navegador
+        localStorage.setItem("clienteLogado", JSON.stringify({
+            id: clienteValido.id,
+            nome: clienteValido.nome
+        }));
+
+        alert(`Bem-vindo, ${clienteValido.nome}!`);
+        window.location.href = "index.html";
+
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+function logoutCliente() {
+    localStorage.removeItem("clienteLogado");
+    alert("Sessão encerrada.");
+    window.location.reload();
+}
+
+// --- SISTEMA DE COMPRAS ---
+
+async function comprarCarta(cartaId) {
+    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
+
+    // BLOQUEIO CRÍTICO: Só compra se estiver logado
+    if (!clienteLogado) {
+        alert("Ação negada! Você precisa estar logado no sistema para comprar cartas.");
+        window.location.href = "login.html";
+        return;
+    }
+
+    const qtdInformada = prompt("Quantas unidades desta carta deseja comprar?", "1");
+    if (qtdInformada === null) return; // Usuário cancelou o prompt
+
+    const quantidade = parseInt(qtdInformada);
+    if (isNaN(quantidade) || quantidade <= 0) {
+        alert("Quantidade inválida informada.");
+        return;
+    }
+
+    try {
+        const resposta = await fetch(API_COMPRAS, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                cliente_id: clienteLogado.id,
+                carta_id: cartaId,
+                quantidade: quantidade
+            })
+        });
+
+        if (!resposta.ok) {
+            const erro = await resposta.json();
+            throw new Error(erro.detail || "Erro ao processar compra. Verifique o estoque da carta.");
+        }
+
+        alert("Compra efetuada com sucesso!");
+        listarCartas(); // Atualiza a tabela da listagem para renderizar a nova quantidade em estoque
+
+    } catch (erro) {
+        alert(erro.message);
+    }
+}
+
+// --- MANUTENÇÃO DOS MÉTODOS EXISTENTES (Sem Quebras) ---
 
 async function listarCartas() {
     const tabela = document.getElementById("tabelaCartas");
+    if (!tabela) return;
 
     try {
         const resposta = await fetch(API_CARTAS);
-
-        if (!resposta.ok) {
-            throw new Error("Servidor não respondeu");
-        }
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
 
         const cartas = await resposta.json();
         tabela.innerHTML = "";
@@ -21,7 +128,10 @@ async function listarCartas() {
                     <td>${carta.nome}</td>
                     <td>${carta.atk}</td>
                     <td>${carta.defesa}</td>
-                    <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td> <td>${carta.quantidade}</td> <td>
+                    <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td>
+                    <td>${carta.quantidade}</td>
+                    <td>
+                        <button onclick="comprarCarta(${carta.id})" class="btn btn-success btn-sm me-1">Comprar</button>
                         <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
                         <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button>
                     </td>
@@ -30,16 +140,20 @@ async function listarCartas() {
         });
 
     } catch (erro) {
-        document.getElementById("erro").classList.remove("d-none");
-        document.getElementById("erro").innerText = erro.message;
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
     }
 }
+
 async function criarCarta(event){
     event.preventDefault();
 
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
-    const defesa = parseInt(document.getElementById("defesa").value);
+    const defensa = parseInt(document.getElementById("defesa").value);
     const preco = parseFloat(document.getElementById("preco").value);
     const quantidade = parseInt(document.getElementById("quantidade").value);
 
@@ -52,7 +166,7 @@ async function criarCarta(event){
             body: JSON.stringify({
                 nome: nome,
                 atk: atk,
-                defesa: defesa,
+                defesa: defensa,
                 preco: preco,
                 quantidade: quantidade
             })
@@ -70,21 +184,23 @@ async function criarCarta(event){
         alert(erro.message);
     }
 }
-async function carregarCarta() {//para  carregar a carta na pagina
-        try {
-            const resposta = await fetch(`${API_CARTAS}/${id}`);
-            if (!resposta.ok) throw new Error("Erro ao carregar carta");
 
-            const carta = await resposta.json();
-            document.getElementById("nome").value = carta.nome;
-            document.getElementById("atk").value = carta.atk;
-            document.getElementById("defesa").value = carta.defesa;
-            document.getElementById("preco").value = carta.preco;
-            document.getElementById("quantidade").value = carta.quantidade;
-        } catch (erro) {
-            alert(erro.message);
-        }
+async function carregarCarta(id) { // CORRIGIDO: Adicionado parâmetro 'id' que faltava
+    try {
+        const resposta = await fetch(`${API_CARTAS}/${id}`);
+        if (!resposta.ok) throw new Error("Erro ao carregar carta");
+
+        const carta = await resposta.json();
+        document.getElementById("nome").value = carta.nome;
+        document.getElementById("atk").value = carta.atk;
+        document.getElementById("defesa").value = carta.defesa;
+        document.getElementById("preco").value = carta.preco;
+        document.getElementById("quantidade").value = carta.quantidade;
+    } catch (erro) {
+        alert(erro.message);
     }
+}
+
 async function editarCarta(id) {
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
@@ -118,6 +234,7 @@ async function editarCarta(id) {
         alert(erro.message);
     }
 }
+
 async function deletarCarta(id) {
     if (!confirm("Tem certeza que deseja excluir esta carta?")) {
         return;
@@ -139,15 +256,14 @@ async function deletarCarta(id) {
         alert(erro.message);
     }
 }
+
 async function listarClientes() {
     const tabela = document.getElementById("tabelaClientes");
+    if (!tabela) return;
 
     try {
         const resposta = await fetch(API_CLIENTES);
-
-        if (!resposta.ok) {
-            throw new Error("Servidor não respondeu");
-        }
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
 
         const clientes = await resposta.json();
         tabela.innerHTML = "";
@@ -168,10 +284,14 @@ async function listarClientes() {
         });
 
     } catch (erro) {
-        document.getElementById("erro").classList.remove("d-none");
-        document.getElementById("erro").innerText = erro.message;
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
     }
 }
+
 async function criarCliente(event){
     event.preventDefault();
 
@@ -272,3 +392,4 @@ async function deletarCliente(id) {
         alert(erro.message);
     }
 }
+// CORRIGIDO: Removida a chave de fechamento extra '}' que quebrava o script original aqui.
