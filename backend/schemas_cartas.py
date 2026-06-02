@@ -4,14 +4,14 @@ from pydantic import BaseModel, ConfigDict
 class CriarCarta(BaseModel):
     nome: str
     atk: int
-    Def: int
+    defesa: int
     preco: float
     quantidade: int
 
 class CartaUpdate(BaseModel):
     nome: Optional[str]  = None
     atk: Optional[int]  = None
-    Def: Optional[int] = None
+    defesa: Optional[int] = None
     preco: Optional[float] = None
     quantidade: Optional[int] = None
 
@@ -19,7 +19,7 @@ class CartaResponse(BaseModel):
     id: int
     nome: str
     atk: int
-    Def: int
+    defesa: int
     preco: float
     quantidade: int
 

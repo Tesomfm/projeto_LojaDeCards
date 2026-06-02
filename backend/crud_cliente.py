@@ -32,6 +32,8 @@ def substituir_cliente(db: Session, cliente_id: int, dados: CriarCliente):
     if not cliente:
         return None
     cliente.nome = dados.nome
+    cliente.email = dados.email
+    cliente.senha = dados.senha
     cliente.dataDeNascimento = dados.dataDeNascimento
     cliente.genero = dados.genero
     db.commit()
