@@ -1,34 +1,41 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
-from relacao_clientes_cartas import Compra
+from relacao_clientes_cartas import Comprar
 from modelos_cartas import Carta
 from schemas_relacao import CriarCompra
 
 def criar_compra(db: Session, dados: CriarCompra):
-    compra_existente = db.query(Compra).filter(
-        Compra.cliente_id == dados.cliente_id,
-        Compra.carta_id == dados.carta_id
+    carta = db.query(Carta).filter(Carta.id == dados.carta_id).first()
+    if not carta:
+        raise HTTPException(status_code=404, detail="Carta não encontrada")
+
+    if carta.quantidade < dados.quantidade:
+        raise HTTPException(status_code=400, detail="Estoque insuficiente")
+
+    compra_existente = db.query(Comprar).filter(
+        Comprar.cliente_id == dados.cliente_id,
+        Comprar.carta_id == dados.carta_id
     ).first()
 
     if compra_existente:
         compra_existente.quantidade += dados.quantidade
-        Carta.quantidade -= dados.quantidade
-        db.commit()
-        db.refresh(compra_existente)
-        return compra_existente
     else:
-        Carta.quantidade -= dados.quantidade
-        nova_compra = Compra(
+        nova_compra = Comprar(
             cliente_id=dados.cliente_id,
             carta_id=dados.carta_id,
             quantidade=dados.quantidade
         )
         db.add(nova_compra)
-        db.commit()
-        db.refresh(nova_compra)
-        return nova_compra
+
+    carta.quantidade -= dados.quantidade
+
+    db.commit()
+    db.refresh(carta)
+    return compra_existente if compra_existente else nova_compra
 
 def listar_compras(db: Session):
-    return db.query(Compra).all()
+    return db.query(Comprar).all()
 def listar_compras_por_cliente(db: Session, cliente_id: int):
-    return db.query(Compra).filter(Compra.cliente_id == cliente_id).all()
+    return db.query(Comprar).filter(Comprar.cliente_id == cliente_id).all()
+def buscar_compra(db: Session, compra_id: int):
+    return db.query(Comprar).filter(Comprar.id == compra_id).first()

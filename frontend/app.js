@@ -1,6 +1,6 @@
 const API_CARTAS = "http://localhost:8000/carta";
 const API_CLIENTES = "http://localhost:8000/cliente";
-const API_COMPRAS = "http://localhost:8000/compra"; // Endpoint mapeado do seu crud_relacao
+const API_COMPRAS = "http://localhost:8000/compra";
 
 // --- SISTEMA DE AUTENTICAÇÃO (Mecanismo Seguro Frontend) ---
 
@@ -392,4 +392,3 @@ async function deletarCliente(id) {
         alert(erro.message);
     }
 }
-// CORRIGIDO: Removida a chave de fechamento extra '}' que quebrava o script original aqui.

@@ -12,4 +12,4 @@ class Carta(Base):
     preco =Column(Float, default=0.0)
     quantidade=Column(Integer,default=0)
 
-    compras = relationship("Compra", back_populates="carta")
+    compras = relationship("Comprar", back_populates="carta")
