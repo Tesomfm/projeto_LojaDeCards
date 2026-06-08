@@ -8,6 +8,11 @@ from schemas_relacao import CriarCompra, CompraResponse
 
 rotas = APIRouter(prefix="/compra", tags=["compras"])
 
+
+@rotas.get("/", response_model=list[CompraResponse])
+def listar(db: Session = Depends(get_db)):
+    return crud_relacao.listar_compras(db)
+
 @rotas.post("/", response_model=CompraResponse, status_code=201)
 def criar(dados: CriarCompra, db: Session = Depends(get_db)):
     carta = crud_cartas.buscar_carta(db, dados.carta_id)
