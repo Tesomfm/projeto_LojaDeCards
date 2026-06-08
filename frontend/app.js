@@ -1,8 +1,7 @@
 const API_CARTAS = "http://localhost:8000/carta";
 const API_CLIENTES = "http://localhost:8000/cliente";
-const API_COMPRAS = "http://localhost:8000/compra"; // Endpoint mapeado do seu crud_relacao
+const API_COMPRAS = "http://localhost:8000/compra";
 
-// --- SISTEMA DE AUTENTICAÇÃO (Mecanismo Seguro Frontend) ---
 
 function atualizarInterfaceAutenticacao() {
     const authArea = document.getElementById("authArea");
@@ -62,12 +61,9 @@ function logoutCliente() {
     window.location.reload();
 }
 
-// --- SISTEMA DE COMPRAS ---
-
 async function comprarCarta(cartaId) {
     const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
 
-    // BLOQUEIO CRÍTICO: Só compra se estiver logado
     if (!clienteLogado) {
         alert("Ação negada! Você precisa estar logado no sistema para comprar cartas.");
         window.location.href = "login.html";
@@ -75,8 +71,7 @@ async function comprarCarta(cartaId) {
     }
 
     const qtdInformada = prompt("Quantas unidades desta carta deseja comprar?", "1");
-    if (qtdInformada === null) return; // Usuário cancelou o prompt
-
+    if (qtdInformada === null) return;
     const quantidade = parseInt(qtdInformada);
     if (isNaN(quantidade) || quantidade <= 0) {
         alert("Quantidade inválida informada.");
@@ -102,26 +97,27 @@ async function comprarCarta(cartaId) {
         }
 
         alert("Compra efetuada com sucesso!");
-        listarCartas(); // Atualiza a tabela da listagem para renderizar a nova quantidade em estoque
+        listarCartas();
 
     } catch (erro) {
         alert(erro.message);
     }
 }
 
-// --- MANUTENÇÃO DOS MÉTODOS EXISTENTES (Sem Quebras) ---
-
-async function listarCartas() {
+async function listarCartas(page = 1) {
+    const limite = 10;
     const tabela = document.getElementById("tabelaCartas");
+    const paginacaoDiv = document.getElementById("paginacao");
     if (!tabela) return;
 
     try {
-        const resposta = await fetch(API_CARTAS);
+        const resposta = await fetch(`${API_CARTAS}/pesquisar?page=${page}&limit=${limite}`);
         if (!resposta.ok) throw new Error("Servidor não respondeu");
 
-        const cartas = await resposta.json();
-        tabela.innerHTML = "";
+        const resultado = await resposta.json();
+        const cartas = resultado.data || [];
 
+        tabela.innerHTML = "";
         cartas.forEach(carta => {
             tabela.innerHTML += `
                 <tr>
@@ -132,12 +128,81 @@ async function listarCartas() {
                     <td>${carta.quantidade}</td>
                     <td>
                         <button onclick="comprarCarta(${carta.id})" class="btn btn-success btn-sm me-1">Comprar</button>
-                        <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="editarCarta.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
                         <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button>
                     </td>
                 </tr>
             `;
         });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => pesquisarCartas(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
+
+    } catch (erro) {
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
+    }
+}
+
+async function pesquisarCartas(page = 1) {
+    const limite = 10;
+    const nome = document.getElementById("buscaNome").value.trim();
+    const tabela = document.getElementById("tabelaCartas");
+    const paginacaoDiv = document.getElementById("paginacao");
+    if (!tabela) return;
+
+    try {
+        const resposta = await fetch(`${API_CARTAS}/pesquisar?page=${page}&limit=${limite}&nome=${encodeURIComponent(nome)}`);
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
+
+        const resultado = await resposta.json();
+        const cartas = resultado.data || [];
+
+        tabela.innerHTML = "";
+        cartas.forEach(carta => {
+            tabela.innerHTML += `
+                <tr>
+                    <td>${carta.nome}</td>
+                    <td>${carta.atk}</td>
+                    <td>${carta.defesa}</td>
+                    <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td>
+                    <td>${carta.quantidade}</td>
+                    <td>
+                        <button onclick="comprarCarta(${carta.id})" class="btn btn-success btn-sm me-1">Comprar</button>
+                        <a href="editarCarta.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => pesquisarCartas(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
 
     } catch (erro) {
         const erroDiv = document.getElementById("erro");
@@ -257,17 +322,20 @@ async function deletarCarta(id) {
     }
 }
 
-async function listarClientes() {
+async function listarClientes(page = 1) {
+    const limite = 10;
     const tabela = document.getElementById("tabelaClientes");
+    const paginacaoDiv = document.getElementById("paginacao");
     if (!tabela) return;
 
     try {
-        const resposta = await fetch(API_CLIENTES);
+        const resposta = await fetch(`${API_CLIENTES}/pesquisar?page=${page}&limit=${limite}`);
         if (!resposta.ok) throw new Error("Servidor não respondeu");
 
-        const clientes = await resposta.json();
-        tabela.innerHTML = "";
+        const resultado = await resposta.json();
+        const clientes = resultado.data || [];
 
+        tabela.innerHTML = "";
         clientes.forEach(cliente => {
             tabela.innerHTML += `
                 <tr>
@@ -282,6 +350,73 @@ async function listarClientes() {
                 </tr>
             `;
         });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => listarClientes(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
+
+    } catch (erro) {
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
+    }
+}
+
+async function pesquisarClientes(page = 1) {
+    const limite = 10;
+    const nome = document.getElementById("buscaNome").value.trim();
+    const tabela = document.getElementById("tabelaClientes");
+    const paginacaoDiv = document.getElementById("paginacao");
+    if (!tabela) return;
+
+    try {
+        const resposta = await fetch(`${API_CLIENTES}/pesquisar?page=${page}&limit=${limite}&nome=${encodeURIComponent(nome)}`);
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
+
+        const resultado = await resposta.json();
+        const clientes = resultado.data || [];
+
+        tabela.innerHTML = "";
+        clientes.forEach(cliente => {
+            tabela.innerHTML += `
+                <tr>
+                    <td>${cliente.id}</td>
+                    <td>${cliente.nome}</td>
+                    <td>${new Date(cliente.dataDeNascimento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</td>
+                    <td>${cliente.genero}</td>
+                    <td>
+                        <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm">Editar</a>
+                        <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">Excluir</button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => pesquisarClientes(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
 
     } catch (erro) {
         const erroDiv = document.getElementById("erro");
@@ -392,4 +527,3 @@ async function deletarCliente(id) {
         alert(erro.message);
     }
 }
-// CORRIGIDO: Removida a chave de fechamento extra '}' que quebrava o script original aqui.
