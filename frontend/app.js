@@ -2,7 +2,6 @@ const API_CARTAS = "http://localhost:8000/carta";
 const API_CLIENTES = "http://localhost:8000/cliente";
 const API_COMPRAS = "http://localhost:8000/compra";
 
-
 function atualizarInterfaceAutenticacao() {
     const authArea = document.getElementById("authArea");
     if (!authArea) return;
@@ -103,7 +102,7 @@ async function comprarCarta(cartaId) {
         alert(erro.message);
     }
 }
-
+//clientes ussa
 async function listarCartas(page = 1) {
     const limite = 10;
     const tabela = document.getElementById("tabelaCartas");
@@ -120,18 +119,16 @@ async function listarCartas(page = 1) {
         tabela.innerHTML = "";
         cartas.forEach(carta => {
             tabela.innerHTML += `
-                <tr>
-                    <td>${carta.nome}</td>
-                    <td>${carta.atk}</td>
-                    <td>${carta.defesa}</td>
-                    <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td>
-                    <td>${carta.quantidade}</td>
+                    <td><strong>${carta.nome}</strong></td>
+                    <td><span class="text-warning">${carta.atk}</span></td>
+                    <td><span class="text-info">${carta.defesa}</span></td>
+                    <td>R$ ${carta.preco.toFixed(2)}</td>
+                    <td>${carta.quantidade > 0 ? `${carta.quantidade} un` : '<span class="text-danger">Esgotado</span>'}</td>
                     <td>
-                        <button onclick="comprarCarta(${carta.id})" class="btn btn-success btn-sm me-1">Comprar</button>
-                        <a href="editarCarta.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
-                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="comprarCarta(${carta.id})" ${carta.quantidade <= 0 ? 'disabled' : ''}>
+                            🛒 Comprar
+                        </button>
                     </td>
-                </tr>
             `;
         });
 
@@ -175,18 +172,16 @@ async function pesquisarCartas(page = 1) {
         tabela.innerHTML = "";
         cartas.forEach(carta => {
             tabela.innerHTML += `
-                <tr>
-                    <td>${carta.nome}</td>
-                    <td>${carta.atk}</td>
-                    <td>${carta.defesa}</td>
-                    <td>R$ ${parseFloat(carta.preco).toFixed(2)}</td>
-                    <td>${carta.quantidade}</td>
+                    <td><strong>${carta.nome}</strong></td>
+                    <td><span class="text-warning">${carta.atk}</span></td>
+                    <td><span class="text-info">${carta.defesa}</span></td>
+                    <td>R$ ${carta.preco.toFixed(2)}</td>
+                    <td>${carta.quantidade > 0 ? `${carta.quantidade} un` : '<span class="text-danger">Esgotado</span>'}</td>
                     <td>
-                        <button onclick="comprarCarta(${carta.id})" class="btn btn-success btn-sm me-1">Comprar</button>
-                        <a href="editarCarta.html?id=${carta.id}" class="btn btn-warning btn-sm">Editar</a>
-                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">Excluir</button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="comprarCarta(${carta.id})" ${carta.quantidade <= 0 ? 'disabled' : ''}>
+                            🛒 Comprar
+                        </button>
                     </td>
-                </tr>
             `;
         });
 
@@ -250,7 +245,7 @@ async function criarCarta(event){
     }
 }
 
-async function carregarCarta(id) { // CORRIGIDO: Adicionado parâmetro 'id' que faltava
+async function carregarCarta(id) {
     try {
         const resposta = await fetch(`${API_CARTAS}/${id}`);
         if (!resposta.ok) throw new Error("Erro ao carregar carta");
@@ -321,7 +316,7 @@ async function deletarCarta(id) {
         alert(erro.message);
     }
 }
-
+//clientes ussa
 async function listarClientes(page = 1) {
     const limite = 10;
     const tabela = document.getElementById("tabelaClientes");
@@ -338,16 +333,10 @@ async function listarClientes(page = 1) {
         tabela.innerHTML = "";
         clientes.forEach(cliente => {
             tabela.innerHTML += `
-                <tr>
-                    <td>${cliente.id}</td>
-                    <td>${cliente.nome}</td>
-                    <td>${new Date(cliente.dataDeNascimento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</td>
-                    <td>${cliente.genero}</td>
-                    <td>
-                        <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm">Editar</a>
-                        <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">Excluir</button>
-                    </td>
-                </tr>
+                <td>${cliente.id}</td>
+                <td>${cliente.nome}</td>
+                <td>${new Date(cliente.dataDeNascimento).toLocaleDateString('pt-BR')}</td>
+                <td>${cliente.genero}</td>
             `;
         });
 
@@ -391,16 +380,10 @@ async function pesquisarClientes(page = 1) {
         tabela.innerHTML = "";
         clientes.forEach(cliente => {
             tabela.innerHTML += `
-                <tr>
-                    <td>${cliente.id}</td>
-                    <td>${cliente.nome}</td>
-                    <td>${new Date(cliente.dataDeNascimento).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</td>
-                    <td>${cliente.genero}</td>
-                    <td>
-                        <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm">Editar</a>
-                        <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">Excluir</button>
-                    </td>
-                </tr>
+                <td>${cliente.id}</td>
+                <td>${cliente.nome}</td>
+                <td>${new Date(cliente.dataDeNascimento).toLocaleDateString('pt-BR')}</td>
+                <td>${cliente.genero}</td>
             `;
         });
 
@@ -525,5 +508,249 @@ async function deletarCliente(id) {
         listarClientes();
     } catch (erro) {
         alert(erro.message);
+    }
+}
+
+function loginFuncionario(event) {
+    event.preventDefault();
+    const usuario = document.getElementById("funcUsuario").value;
+    const senha = document.getElementById("funcSenha").value;
+    const campoErro = document.getElementById("erroFuncionario");
+
+    campoErro.classList.add("d-none");
+
+    if (senha === "kaibamen") {
+        localStorage.setItem("funcionarioAutenticado", JSON.stringify({ user: usuario, loginAt: new Date() }));
+        window.location.href = "dashboard-funcionario.html";
+    } else {
+        campoErro.innerText = "Chave de Acesso Inválida para Funcionários!";
+        campoErro.classList.remove("d-none");
+    }
+}
+
+function logoutFuncionario() {
+    localStorage.removeItem("funcionarioAutenticado");
+    window.location.href = "login-funcionario.html";
+}
+
+function mudarPainelAdmin(painel) {
+    if (painel === 'cartas') {
+        document.getElementById('panel-cartas').classList.remove('d-none');
+        document.getElementById('panel-clientes').classList.add('d-none');
+        document.getElementById('cartas-tab').classList.add('active');
+        document.getElementById('clientes-tab').classList.remove('active');
+    } else {
+        document.getElementById('panel-cartas').classList.add('d-none');
+        document.getElementById('panel-clientes').classList.remove('d-none');
+        document.getElementById('cartas-tab').classList.remove('active');
+        document.getElementById('clientes-tab').classList.add('active');
+    }
+}
+//fucionario ussa
+async function listarCartasAdmin(page = 1) {
+    const limite = 10;
+    const tabela = document.getElementById("tabelaCartasAdmin");
+    const paginacaoDiv = document.getElementById("paginacaoCartasAdmin");
+    if (!tabela) return;
+
+    try {
+        const resposta = await fetch(`${API_CARTAS}/pesquisar?page=${page}&limit=${limite}`);
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
+
+        const resultado = await resposta.json();
+        const cartas = resultado.data || [];
+
+        tabela.innerHTML = "";
+        cartas.forEach(carta => {
+            tabela.innerHTML += `
+                <td>${carta.nome}</td>
+                <td>${carta.atk}</td>
+                <td>${carta.defesa}</td>
+                <td>R$ ${carta.preco.toFixed(2)}</td>
+                <td>${carta.quantidade} un</td>
+                <td>
+                    <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm me-1">✏️ Editar</a>
+                    <button onclick="deletarCartaAdmin(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
+                </td>
+            `;
+        });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => listarCartasAdmin(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
+
+    } catch (erro) {
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
+    }
+}
+
+async function pesquisarCartasAdmin(page = 1) {
+    const limite = 10;
+    const nome = document.getElementById("buscaNomeCartaAdmin").value.trim();
+    const tabela = document.getElementById("tabelaCartasAdmin");
+    const paginacaoDiv = document.getElementById("paginacaoCartasAdmin");
+    if (!tabela) return;
+
+    try {
+        const resposta = await fetch(`${API_CARTAS}/pesquisar?page=${page}&limit=${limite}&nome=${encodeURIComponent(nome)}`);
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
+
+        const resultado = await resposta.json();
+        const cartas = resultado.data || [];
+
+        tabela.innerHTML = "";
+        cartas.forEach(carta => {
+            tabela.innerHTML += `
+                    <td>${carta.nome}</td>
+                    <td>${carta.atk}</td>
+                    <td>${carta.defesa}</td>
+                    <td>R$ ${carta.preco.toFixed(2)}</td>
+                    <td>${carta.quantidade} un</td>
+                    <td>
+                        <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm me-1">✏️ Editar</a>
+                        <button onclick="deletarCartaAdmin(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
+                    </td>
+            `;
+        });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => pesquisarCartasAdmin(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
+
+    } catch (erro) {
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
+    }
+}
+
+async function listarClientesAdmin(page = 1) {
+    const limite = 10;
+    const tabela = document.getElementById("tabelaClientesAdmin");
+    const paginacaoDiv = document.getElementById("paginacaoClientesAdmin");
+    if (!tabela) return;
+
+    try {
+        const resposta = await fetch(`${API_CLIENTES}/pesquisar?page=${page}&limit=${limite}`);
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
+
+        const resultado = await resposta.json();
+        const clientes = resultado.data || [];
+
+        tabela.innerHTML = "";
+        clientes.forEach(cliente => {
+            tabela.innerHTML += `
+            <tr>
+                <td>${cliente.id}</td>
+                <td><strong>${cliente.nome}</strong></td>
+                <td>${new Date(cliente.dataDeNascimento).toLocaleDateString("pt-BR")}</td>
+                <td>${cliente.genero}</td>
+                <td>
+                    <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
+                    <button onclick="deletarClienteAdmin(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                </td>
+            </tr>
+            `;
+        });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => listarClientesAdmin(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
+
+    } catch (erro) {
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
+    }
+}
+
+async function pesquisarClientesAdmin(page = 1) {
+    const limite = 10;
+    const nome = document.getElementById("buscaNomeClienteAdmin").value.trim();
+    const tabela = document.getElementById("tabelaClientesAdmin");
+    const paginacaoDiv = document.getElementById("paginacaoClientesAdmin");
+    if (!tabela) return;
+
+    try {
+        const resposta = await fetch(`${API_CLIENTES}/pesquisar?page=${page}&limit=${limite}&nome=${encodeURIComponent(nome)}`);
+        if (!resposta.ok) throw new Error("Servidor não respondeu");
+
+        const resultado = await resposta.json();
+        const clientes = resultado.data || [];
+
+        tabela.innerHTML = "";
+        clientes.forEach(cliente => {
+            tabela.innerHTML += `
+            <tr>
+                    <td>${cliente.id}</td>
+                    <td><strong>${cliente.nome}</strong></td>
+                    <td>${new Date(cliente.dataDeNascimento).toLocaleDateString("pt-BR")}</td>
+                    <td>${cliente.genero}</td>
+                    <td>
+                        <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
+                        <button onclick="deletarClienteAdmin(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                    </td>
+            </tr>
+            `;
+        });
+
+        if (resultado.pages) {
+            paginacaoDiv.innerHTML = "";
+            resultado.pages.forEach(p => {
+                const btn = document.createElement("button");
+                btn.className = "btn btn-outline-primary btn-sm me-1";
+                btn.innerText = p;
+                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
+                if (p !== "...") {
+                    btn.onclick = () => pesquisarClientesAdmin(parseInt(p));
+                }
+                paginacaoDiv.appendChild(btn);
+            });
+        }
+
+    } catch (erro) {
+        const erroDiv = document.getElementById("erro");
+        if (erroDiv) {
+            erroDiv.classList.remove("d-none");
+            erroDiv.innerText = erro.message;
+        }
     }
 }
