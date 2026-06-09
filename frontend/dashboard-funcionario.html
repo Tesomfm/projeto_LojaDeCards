@@ -28,6 +28,7 @@
         </li>
     </ul>
 
+    <!-- Painel de Cartas -->
     <div id="panel-cartas" class="admin-section">
         <div class="input-group mb-3">
             <input type="text" id="buscaNomeCartaAdmin" class="form-control" placeholder="Pesquisar cartas no estoque global...">
@@ -49,38 +50,36 @@
         <nav><ul class="pagination justify-content-center" id="paginacaoCartasAdmin"></ul></nav>
     </div>
 
+    <!-- Painel de Clientes -->
     <div id="panel-clientes" class="admin-section d-none">
-        <div class="input-group mb-3">
-            <input type="text" id="buscaNomeClienteAdmin" class="form-control" placeholder="Pesquisar clientes por nome de registro...">
-            <button class="btn btn-danger" onclick="pesquisarClientesAdmin(1)">Filtrar Usuários</button>
-        </div>
-        <table class="table table-dark table-striped align-middle">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Nome Completo</th>
-                    <th>Data de Nascimento</th>
-                    <th>Gênero</th>
-                    <th>Controles do Funcionário</th>
-                </tr>
-            </thead>
-            <tbody id="tabelaClientesAdmin"></tbody>
-        </table>
-        <nav><ul class="pagination justify-content-center" id="paginacaoClientesAdmin"></ul></nav>
+    <div class="input-group mb-3">
+        <input type="text" id="buscaNomeClienteAdmin" class="form-control" placeholder="Pesquisar clientes por nome de registro...">
+        <button class="btn btn-danger" onclick="pesquisarClientesAdmin(1)">Filtrar Usuários</button>
     </div>
+    <table class="table table-dark table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome Completo</th>
+                <th>Data de Nascimento</th>
+                <th>Gênero</th>
+                <th>Controles do Funcionário</th>
+            </tr>
+        </thead>
+        <tbody id="tabelaClientesAdmin"></tbody>
+    </table>
+    <nav><ul class="pagination justify-content-center" id="paginacaoClientesAdmin"></ul></nav>
 </div>
 
 <script src="app.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Proteção de Rota Básica do Funcionário
     if (!localStorage.getItem("funcionarioAutenticado")) {
         alert("Acesso restrito! Identifique-se primeiro.");
         window.location.href = "login-funcionario.html";
     } else {
-        // Inicializa buscando dados
-        pesquisarCartasAdmin(1);
-        pesquisarClientesAdmin(1);
+        listarCartasAdmin(1);
+        listarClientesAdmin(1);
     }
 </script>
 </body>
