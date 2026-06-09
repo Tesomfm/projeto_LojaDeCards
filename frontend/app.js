@@ -12,51 +12,18 @@ function atualizarInterfaceAutenticacao() {
         authArea.innerHTML = `
             <div class="bg-dark border border-secondary p-2 rounded d-flex align-items-center gap-3">
                 <span class="text-light">Logado como: <strong style="color: gold;">${clienteLogado.nome}</strong></span>
-                <button onclick="logoutCliente()" class="btn btn-outline-danger btn-sm">Sair</button>
+                <button onclick=\"logoutCliente()\" class=\"btn btn-outline-danger btn-sm\">Sair</button>
             </div>
         `;
     } else {
         authArea.innerHTML = `
-            <a href="login.html" class="btn btn-warning btn-sm fw-bold">Fazer Login / Entrar</a>
+            <a href=\"login.html\" class=\"btn btn-warning btn-sm fw-bold\">Fazer Login / Entrar</a>
         `;
-    }
-}
-
-async function loginCliente(event) {
-    event.preventDefault();
-    const email = document.getElementById("loginEmail").value;
-    const senha = document.getElementById("loginSenha").value;
-
-    try {
-        const resposta = await fetch(API_CLIENTES);
-        if (!resposta.ok) throw new Error("Erro ao conectar com o banco de dados de clientes.");
-
-        const clientes = await resposta.json();
-
-        // Validação robusta cruzando e-mail e senha informados
-        const clienteValido = clientes.find(c => c.email === email && c.senha === senha);
-
-        if (!clienteValido) {
-            throw new Error("E-mail ou senha incorretos! Tente novamente.");
-        }
-
-        // Salva os dados essenciais da sessão no navegador
-        localStorage.setItem("clienteLogado", JSON.stringify({
-            id: clienteValido.id,
-            nome: clienteValido.nome
-        }));
-
-        alert(`Bem-vindo, ${clienteValido.nome}!`);
-        window.location.href = "index.html";
-
-    } catch (erro) {
-        alert(erro.message);
     }
 }
 
 function logoutCliente() {
     localStorage.removeItem("clienteLogado");
-    alert("Sessão encerrada.");
     window.location.reload();
 }
 
@@ -132,26 +99,14 @@ async function listarCartas(page = 1) {
             `;
         });
 
-        if (resultado.pages) {
-            paginacaoDiv.innerHTML = "";
-            resultado.pages.forEach(p => {
-                const btn = document.createElement("button");
-                btn.className = "btn btn-outline-primary btn-sm me-1";
-                btn.innerText = p;
-                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
-                if (p !== "...") {
-                    btn.onclick = () => pesquisarCartas(parseInt(p));
-                }
-                paginacaoDiv.appendChild(btn);
-            });
-        }
+    campoErro.classList.add("d-none");
 
-    } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+    if (senha === "kaibamen") {
+        localStorage.setItem("funcionarioAutenticado", JSON.stringify({ user: usuario, loginAt: new Date() }));
+        window.location.href = "dashboard-funcionario.html";
+    } else {
+        campoErro.innerText = "Chave de Acesso Inválida para Funcionários!";
+        campoErro.classList.remove("d-none");
     }
 }
 
@@ -208,40 +163,18 @@ async function pesquisarCartas(page = 1) {
     }
 }
 
-async function criarCarta(event){
-    event.preventDefault();
-
-    const nome = document.getElementById("nome").value;
-    const atk = parseInt(document.getElementById("atk").value);
-    const defensa = parseInt(document.getElementById("defesa").value);
-    const preco = parseFloat(document.getElementById("preco").value);
-    const quantidade = parseInt(document.getElementById("quantidade").value);
-
-    try {
-        const resposta = await fetch(API_CARTAS, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome: nome,
-                atk: atk,
-                defesa: defensa,
-                preco: preco,
-                quantidade: quantidade
-            })
-        });
-
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao salvar carta");
-        }
-
-        const carta = await resposta.json();
-        alert(`Carta criada com sucesso! ID: ${carta.id}`);
-        window.location.href = "index.html";
-    } catch (erro) {
-        alert(erro.message);
+// Alternar Abas no Dashboard
+function mudarPainelAdmin(painel) {
+    if (painel === 'cartas') {
+        document.getElementById('panel-cartas').classList.remove('d-none');
+        document.getElementById('panel-clientes').classList.add('d-none');
+        document.getElementById('cartas-tab').classList.add('active');
+        document.getElementById('clientes-tab').classList.remove('active');
+    } else {
+        document.getElementById('panel-cartas').classList.add('d-none');
+        document.getElementById('panel-clientes').classList.remove('d-none');
+        document.getElementById('cartas-tab').classList.remove('active');
+        document.getElementById('clientes-tab').classList.add('active');
     }
 }
 
@@ -261,59 +194,66 @@ async function carregarCarta(id) {
     }
 }
 
-async function editarCarta(id) {
-    const nome = document.getElementById("nome").value;
-    const atk = parseInt(document.getElementById("atk").value);
-    const defesa = parseInt(document.getElementById("defesa").value);
-    const preco = parseFloat(document.getElementById("preco").value);
-    const quantidade = parseInt(document.getElementById("quantidade").value);
-
+// ================= FLUXOS PÚBLICOS (CLIENTE) =================
+async function pesquisarCartas(page = 1) {
+    const nomeBusca = document.getElementById("buscaNome")?.value || "";
     try {
-        const resposta = await fetch(`${API_CARTAS}/${id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome: nome,
-                atk: atk,
-                defesa: defesa,
-                preco: preco,
-                quantidade: quantidade
-            })
+        const resposta = await fetch(`${API_CARTAS}/pesquisar?page=${page}&limit=10&nome=${nomeBusca}`);
+        if (!resposta.ok) throw new Error("Erro ao coletar dados das cartas.");
+        const dados = await resposta.json();
+
+        const tbody = document.getElementById("tabelaCartas");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        dados.data.forEach(carta => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td><strong>${carta.nome}</strong></td>
+                <td><span class="text-warning">${carta.atk}</span></td>
+                <td><span class="text-info">${carta.defesa}</span></td>
+                <td>R$ ${carta.preco.toFixed(2)}</td>
+                <td>${carta.quantidade > 0 ? `${carta.quantidade} un` : '<span class="text-danger">Esgotado</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-warning" onclick="comprarCarta(${carta.id})" ${carta.quantidade <= 0 ? 'disabled' : ''}>
+                        🛒 Comprar
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
         });
 
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao atualizar carta");
-        }
-
-        alert("Carta atualizada com sucesso!");
-        window.location.href = "index.html";
+        construirLinksPaginas("paginacaoCartas", dados.total_pages, page, "pesquisarCartas");
     } catch (erro) {
-        alert(erro.message);
+        console.error(erro);
     }
 }
 
-async function deletarCarta(id) {
-    if (!confirm("Tem certeza que deseja excluir esta carta?")) {
-        return;
-    }
-
+async function pesquisarClientes(page = 1) {
+    const nomeBusca = document.getElementById("buscaNome")?.value || "";
     try {
-        const resposta = await fetch(`${API_CARTAS}/${id}`, {
-            method: "DELETE"
+        const resposta = await fetch(`${API_CLIENTES}/pesquisar?page=${page}&limit=10&nome=${nomeBusca}`);
+        if (!resposta.ok) throw new Error("Erro ao coletar dados dos clientes.");
+        const dados = await resposta.json();
+
+        const tbody = document.getElementById("tabelaClientes");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        dados.data.forEach(cliente => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${cliente.id}</td>
+                <td>${cliente.nome}</td>
+                <td>${new Date(cliente.dataDeNascimento).toLocaleDateString('pt-BR')}</td>
+                <td>${cliente.genero}</td>
+            `;
+            tbody.appendChild(tr);
         });
 
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao excluir carta");
-        }
-
-        alert("Carta excluída com sucesso!");
-        listarCartas();
+        construirLinksPaginas("paginacaoClientes", dados.total_pages, page, "pesquisarClientes");
     } catch (erro) {
-        alert(erro.message);
+        console.error(erro);
     }
 }
 //clientes ussa
@@ -338,38 +278,17 @@ async function listarClientes(page = 1) {
                 <td>${new Date(cliente.dataDeNascimento).toLocaleDateString('pt-BR')}</td>
                 <td>${cliente.genero}</td>
             `;
+            tbody.appendChild(tr);
         });
 
-        if (resultado.pages) {
-            paginacaoDiv.innerHTML = "";
-            resultado.pages.forEach(p => {
-                const btn = document.createElement("button");
-                btn.className = "btn btn-outline-primary btn-sm me-1";
-                btn.innerText = p;
-                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
-                if (p !== "...") {
-                    btn.onclick = () => listarClientes(parseInt(p));
-                }
-                paginacaoDiv.appendChild(btn);
-            });
-        }
-
+        construirLinksPaginas("paginacaoCartasAdmin", dados.total_pages, page, "pesquisarCartasAdmin");
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        console.error("Falha ao listar cartas no painel admin", erro);
     }
 }
 
-async function pesquisarClientes(page = 1) {
-    const limite = 10;
-    const nome = document.getElementById("buscaNome").value.trim();
-    const tabela = document.getElementById("tabelaClientes");
-    const paginacaoDiv = document.getElementById("paginacao");
-    if (!tabela) return;
-
+async function pesquisarClientesAdmin(page = 1) {
+    const nomeBusca = document.getElementById("buscaNomeClienteAdmin")?.value || "";
     try {
         const resposta = await fetch(`${API_CLIENTES}/pesquisar?page=${page}&limit=${limite}&nome=${encodeURIComponent(nome)}`);
         if (!resposta.ok) throw new Error("Servidor não respondeu");
@@ -385,129 +304,61 @@ async function pesquisarClientes(page = 1) {
                 <td>${new Date(cliente.dataDeNascimento).toLocaleDateString('pt-BR')}</td>
                 <td>${cliente.genero}</td>
             `;
+            tbody.appendChild(tr);
         });
 
-        if (resultado.pages) {
-            paginacaoDiv.innerHTML = "";
-            resultado.pages.forEach(p => {
-                const btn = document.createElement("button");
-                btn.className = "btn btn-outline-primary btn-sm me-1";
-                btn.innerText = p;
-                btn.disabled = (p === "..." || parseInt(p) === resultado.page);
-                if (p !== "...") {
-                    btn.onclick = () => pesquisarClientes(parseInt(p));
-                }
-                paginacaoDiv.appendChild(btn);
-            });
-        }
-
+        construirLinksPaginas("paginacaoClientesAdmin", dados.total_pages, page, "pesquisarClientesAdmin");
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        console.error("Falha ao listar clientes no painel admin", erro);
     }
 }
 
-async function criarCliente(event){
-    event.preventDefault();
-
-    const nome = document.getElementById("nome").value;
-    const email = document.getElementById("email").value;
-    const senha = document.getElementById("senha").value;
-    const dataDeNascimento = document.getElementById("dataDeNascimento").value;
-    const genero = document.getElementById("genero").value;
-
+// Ações exclusivas de exclusão disparadas pelo funcionário
+async function deletarCartaAdmin(id) {
+    if (!confirm("Remover permanentemente esta carta do inventário?")) return;
     try {
-        const resposta = await fetch(API_CLIENTES, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome: nome,
-                email: email,
-                senha: senha,
-                dataDeNascimento: dataDeNascimento,
-                genero: genero
-            })
-        });
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao salvar cliente");
+        const res = await fetch(`${API_CARTAS}/${id}`, { method: "DELETE" });
+        if (res.ok) {
+            alert("Carta removida do acervo!");
+            pesquisarCartasAdmin(1);
         }
-        const cliente = await resposta.json();
-        alert("Cliente criado com sucesso! ID: " + cliente.id);
-        window.location.href = "clientes.html";
-    } catch (erro) {
-        alert(erro.message);
-    }
+    } catch (e) { alert("Erro ao deletar carta"); }
 }
 
-async function carregarCliente(id) {
+async function deletarClienteAdmin(id) {
+    if (!confirm("Excluir o registro completo deste cliente?")) return;
     try {
-        const resposta = await fetch(`${API_CLIENTES}/${id}`);
-        if (!resposta.ok) throw new Error("Erro ao carregar cliente");
-
-        const cliente = await resposta.json();
-        document.getElementById("nome").value = cliente.nome;
-        document.getElementById("dataDeNascimento").value = cliente.dataDeNascimento;
-        document.getElementById("genero").value = cliente.genero;
-    } catch (erro) {
-        alert(erro.message);
-    }
-}
-
-async function editarCliente(id) {
-    const nome = document.getElementById("nome").value;
-    const dataDeNascimento = document.getElementById("dataDeNascimento").value;
-    const genero = document.getElementById("genero").value;
-
-    try {
-        const resposta = await fetch(`${API_CLIENTES}/${id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome: nome,
-                dataDeNascimento: dataDeNascimento,
-                genero: genero
-            })
-        });
-
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao atualizar cliente");
+        const res = await fetch(`${API_CLIENTES}/${id}`, { method: "DELETE" });
+        if (res.ok) {
+            alert("Cliente removido do sistema!");
+            pesquisarClientesAdmin(1);
         }
-
-        alert("Cliente atualizado com sucesso!");
-        window.location.href = "clientes.html";
-    } catch (erro) {
-        alert(erro.message);
-    }
+    } catch (e) { alert("Erro ao deletar cliente"); }
 }
 
-async function deletarCliente(id) {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) {
+// Mantido fluxo simulado ou real de compra do cliente
+async function comprarCarta(cartaId) {
+    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
+    if (!clienteLogado) {
+        alert("Você precisa estar logado para realizar compras.");
+        window.location.href = "login.html";
         return;
     }
-
     try {
-        const resposta = await fetch(`${API_CLIENTES}/${id}`, {
-            method: "DELETE"
+        const resposta = await fetch(API_COMPRAS, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cliente_id: clienteLogado.id, carta_id: cartaId, quantidade: 1 })
         });
-
-        if (!resposta.ok) {
+        if (resposta.ok) {
+            alert("Compra processada com sucesso!");
+            window.location.reload();
+        } else {
             const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao excluir cliente");
+            alert(`Erro na transação: ${erro.detail}`);
         }
-
-        alert("Cliente excluído com sucesso!");
-        listarClientes();
     } catch (erro) {
-        alert(erro.message);
+        alert("Não foi possível processar a compra.");
     }
 }
 

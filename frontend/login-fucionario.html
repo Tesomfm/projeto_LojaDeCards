@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Área do Funcionário - Corporação Kaiba</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-dark text-white">
+<div class="container mt-5" style="max-width: 450px;">
+    <div class="card border-danger shadow p-4">
+        <h2 class="text-center mb-4" style="color: #ff3333; font-family: monospace;">PAINEL DO FUNCIONÁRIO</h2>
+
+        <form id="formLoginFuncionario" onsubmit="loginFuncionario(event)">
+            <div class="mb-3">
+                <label for="funcUsuario" class="form-label">Usuário / ID do Funcionário</label>
+                <input type="text" id="funcUsuario" class="form-control" placeholder="Ex: SetoKaiba" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="funcSenha" class="form-label">Senha de Acesso</label>
+                <input type="password" id="funcSenha" class="form-control" placeholder="Senha secreta" required>
+            </div>
+
+            <div id="erroFuncionario" class="alert alert-danger d-none mb-3 small"></div>
+
+            <button type="submit" class="btn btn-danger w-100 fw-bold mb-3">Autenticar Acesso</button>
+
+            <div class="text-center">
+                <a href="index.html" class="text-secondary text-decoration-none small">← Voltar para a Loja Pública</a>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
