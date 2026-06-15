@@ -33,3 +33,7 @@ cd frontend
 npm install
 npm run dev
 
+---
+
+nome para login em funcionario 'matheus' ou 'kaio'
+senha kaibamen

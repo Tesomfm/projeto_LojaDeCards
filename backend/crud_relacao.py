@@ -1,10 +1,14 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from modelos_cliente import Cliente
 from relacao_clientes_cartas import Comprar
 from modelos_cartas import Carta
 from schemas_relacao import CriarCompra
 
 def criar_compra(db: Session, dados: CriarCompra):
+    cliente = db.query(Cliente).filter(Cliente.id == dados.cliente_id).first()
+    if not cliente:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado")
     carta = db.query(Carta).filter(Carta.id == dados.carta_id).first()
     if not carta:
         raise HTTPException(status_code=404, detail="Carta não encontrada")
