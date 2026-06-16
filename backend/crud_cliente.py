@@ -6,6 +6,8 @@ from schemas_cliente import CriarCliente, ClienteUpdate
 def listar_clientes(db: Session):
     return db.query(Cliente).all()
 
+def buscar_cliente_por_email(db: Session, email: str):
+    return db.query(Cliente).filter(Cliente.email == email).first()
 def buscar_cliente(db: Session, cliente_id: int):
     return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
