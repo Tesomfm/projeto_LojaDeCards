@@ -1,0 +1,61 @@
+/* Customizações para a tela de Login e Componentes novos */
+body {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+.card {
+    background-color: #1a1a1a !important;
+    border-radius: 12px;
+}
+
+.border-danger {
+    border-color: #ff3333 !important;
+}
+
+.text-danger {
+    color: #ff3333 !important;
+}
+
+.btn-warning {
+    background-color: gold !important;
+    border-color: gold !important;
+    color: #111 !important;
+}
+
+.btn-warning:hover {
+    background-color: #e6b800 !important;
+    border-color: #e6b800 !important;
+}
+
+.btn-danger {
+    background-color: #cc0000 !important;
+    border-color: #cc0000 !important;
+}
+
+.btn-danger:hover {
+    background-color: #a30000 !important;
+    border-color: #a30000 !important;
+}
+
+.form-control {
+    background-color: #2b2b2b !important;
+    color: #fff !important;
+    border: 1px solid #444 !important;
+}
+
+.form-control:focus {
+    border-color: gold !important;
+    box-shadow: 0 0 0 0.25rem rgba(255, 215, 0, 0.25) !important;
+}
+
+.page-item.active .page-link {
+    background-color: #cc0000 !important;
+    border-color: #cc0000 !important;
+}
+
+.page-link {
+    background-color: #2b2b2b !important;
+    color: #fff !important;
+    border-color: #444 !important;
+}
