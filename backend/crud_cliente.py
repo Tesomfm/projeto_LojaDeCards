@@ -10,6 +10,9 @@ def buscar_cliente(db: Session, cliente_id: int):
     return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
 def criar_cliente(db: Session, dados: CriarCliente):
+    existente = db.query(Cliente).filter(Cliente.email == dados.email).first()
+    if existente:
+        raise HTTPException(status_code=400, detail="Opa, esté E-mail já cadastrado.")
     cliente = Cliente(**dados.model_dump())
     db.add(cliente)
     db.commit()

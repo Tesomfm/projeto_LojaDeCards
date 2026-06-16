@@ -1,17 +1,27 @@
 const API_CARTAS = "http://localhost:8000/carta";
-const API_CLIENTES = "http://localhost:8000/cliente";
+const API_CLIENTES = "http://localhost:8000/cliente/";
 const API_COMPRAS = "http://localhost:8000/compra";
+
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(atob(base64));
+    } catch (e) {
+        return null;
+    }
+}
 
 function atualizarInterfaceAutenticacao() {
     const authArea = document.getElementById("authArea");
     if (!authArea) return;
 
-    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
-
-    if (clienteLogado) {
+    const token = localStorage.getItem("clienteToken");
+    if (token) {
+        const payload = parseJwt(token);
         authArea.innerHTML = `
             <div class="bg-dark border border-secondary p-2 rounded d-flex align-items-center gap-3">
-                <span class="text-light">Logado como: <strong style="color: gold;">${clienteLogado.nome}</strong></span>
+                <span class="text-light">Logado como: <strong style="color: gold;">${payload.nome}</strong></span>
                 <button onclick="logoutCliente()" class="btn btn-outline-danger btn-sm">Sair</button>
             </div>
         `;
@@ -28,46 +38,44 @@ async function loginCliente(event) {
     const senha = document.getElementById("loginSenha").value;
 
     try {
-        const resposta = await fetch(API_CLIENTES);
-        if (!resposta.ok) throw new Error("Erro ao conectar com o banco de dados de clientes.");
+        const resposta = await fetch("http://localhost:8000/cliente/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, senha })
+        });
 
-        const clientes = await resposta.json();
-
-        // Validação robusta cruzando e-mail e senha informados
-        const clienteValido = clientes.find(c => c.email === email && c.senha === senha);
-
-        if (!clienteValido) {
+        if (!resposta.ok) {
             throw new Error("E-mail ou senha incorretos! Tente novamente.");
         }
 
-        // Salva os dados essenciais da sessão no navegador
+        const dados = await resposta.json();
+        localStorage.setItem("clienteToken", dados.access_token);
         localStorage.setItem("clienteLogado", JSON.stringify({
-            id: clienteValido.id,
-            nome: clienteValido.nome
+            id: dados.id,
+            nome: dados.nome
         }));
-
-        alert(`Bem-vindo, ${clienteValido.nome}!`);
+        alert("Login realizado com sucesso!");
         window.location.href = "index.html";
-
     } catch (erro) {
         alert(erro.message);
     }
 }
 
 function logoutCliente() {
-    localStorage.removeItem("clienteLogado");
+    localStorage.removeItem("clienteToken");
     alert("Sessão encerrada.");
     window.location.reload();
 }
 
 async function comprarCarta(cartaId) {
-    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
-
-    if (!clienteLogado) {
+    const token = localStorage.getItem("clienteToken");
+    if (!token) {
         alert("Ação negada! Você precisa estar logado no sistema para comprar cartas.");
         window.location.href = "login.html";
         return;
     }
+
+    const payload = parseJwt(token);
 
     const qtdInformada = prompt("Quantas unidades desta carta deseja comprar?", "1");
     if (qtdInformada === null) return;
@@ -81,10 +89,11 @@ async function comprarCarta(cartaId) {
         const resposta = await fetch(API_COMPRAS, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
             body: JSON.stringify({
-                cliente_id: clienteLogado.id,
+                cliente_id: payload.id,
                 carta_id: cartaId,
                 quantidade: quantidade
             })
@@ -207,7 +216,7 @@ async function pesquisarCartas(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarCartas(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -225,7 +234,7 @@ async function pesquisarCartas(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarCartas(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
@@ -376,7 +385,7 @@ async function criarCliente(event){
         }
         const cliente = await resposta.json();
         alert("Cliente criado com sucesso! ID: " + cliente.id);
-        window.location.href = "clientes.html";
+        window.location.href = "login.html"; 
     } catch (erro) {
         alert(erro.message);
     }
@@ -448,25 +457,36 @@ async function deletarCliente(id) {
     }
 }
 
-function loginFuncionario(event) {
+async function loginFuncionario(event) {
     event.preventDefault();
     const usuario = document.getElementById("funcUsuario").value;
     const senha = document.getElementById("funcSenha").value;
     const campoErro = document.getElementById("erroFuncionario");
 
     campoErro.classList.add("d-none");
+    try {
+        const resposta = await fetch("http://localhost:8000/cliente/funcionario/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuario, senha })
+        });
 
-    if (senha === "kaibamen") {
-        localStorage.setItem("funcionarioAutenticado", JSON.stringify({ user: usuario, loginAt: new Date() }));
+        if (!resposta.ok) {
+            throw new Error("Chave de acesso inválida para Funcionários!");
+        }
+        const dados = await resposta.json();
+
+        // Salva o token JWT
+        localStorage.setItem("funcionarioToken", dados.access_token);
+
         window.location.href = "dashboard-funcionario.html";
-    } else {
-        campoErro.innerText = "Chave de Acesso Inválida para Funcionários!";
+    } catch (erro) {
+        campoErro.innerText = erro.message;
         campoErro.classList.remove("d-none");
     }
 }
-
 function logoutFuncionario() {
-    localStorage.removeItem("funcionarioAutenticado");
+    localStorage.removeItem("funcionarioToken");
     window.location.href = "login-funcionario.html";
 }
 
@@ -586,7 +606,7 @@ async function pesquisarCartasAdmin(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarCartasAdmin(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -604,7 +624,7 @@ async function pesquisarCartasAdmin(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarCartasAdmin(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
@@ -721,7 +741,7 @@ async function pesquisarClientesAdmin(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarClientesAdmin(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -739,7 +759,7 @@ async function pesquisarClientesAdmin(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarClientesAdmin(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 

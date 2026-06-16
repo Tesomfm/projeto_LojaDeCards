@@ -2,6 +2,14 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict
 from datetime import date
 
+class LoginCliente(BaseModel):
+    email: str
+    senha: str
+
+class LoginFuncionario(BaseModel):
+    usuario: str
+    senha: str
+
 class CriarCliente(BaseModel):
     nome: str
     email: str

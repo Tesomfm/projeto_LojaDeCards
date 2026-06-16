@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException , Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from auth import criar_token
 import crud_cliente
 from database import get_db
-from schemas_cliente import CriarCliente, ClienteResponse, ClienteUpdate
+from modelos_cliente import Cliente
+from schemas_cliente import CriarCliente, ClienteResponse, ClienteUpdate, LoginCliente, LoginFuncionario
 
 rotas = APIRouter(prefix="/cliente", tags=["clientes"])
 
@@ -19,6 +20,23 @@ def gerar_paginacao(page: int, total_pages: int, window: int = 2):
         paginas.append("...")
         paginas.append(str(total_pages))
     return paginas
+
+@rotas.post("/funcionario/login")
+def login_funcionario(dados: LoginFuncionario):
+    if dados.senha != "kaibamen":
+        raise HTTPException(status_code=401, detail="Chave de acesso inválida para Funcionários")
+    
+    token = criar_token({"sub": dados.usuario, "role": "funcionario"})
+    return {"access_token": token, "token_type": "bearer"}
+
+@rotas.post("/login")
+def login(dados: LoginCliente, db: Session = Depends(get_db)):
+    cliente = db.query(Cliente).filter(Cliente.email == dados.email).first()
+    if not cliente or cliente.senha != dados.senha:
+        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    
+    token = criar_token({"sub": cliente.email, "id": cliente.id,"nome": cliente.nome, "role": "cliente"})
+    return {"access_token": token, "token_type": "bearer"}
 
 @rotas.get("/pesquisar")
 def pesquisar(
@@ -42,6 +60,7 @@ def pesquisar(
         "pages": gerar_paginacao(page, total_pages),
         "data": clientes
     }
+
 @rotas.get("/", response_model=list[ClienteResponse])
 def listar(db: Session = Depends(get_db)):
     return crud_cliente.listar_clientes(db)
