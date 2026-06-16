@@ -1,5 +1,5 @@
 const API_CARTAS = "http://localhost:8000/carta";
-const API_CLIENTES = "http://localhost:8000/cliente/";
+const API_CLIENTES = "http://localhost:8000/cliente";
 const API_COMPRAS = "http://localhost:8000/compra";
 
 function parseJwt(token) {
@@ -249,10 +249,11 @@ async function pesquisarCartas(page = 1) {
 
 async function criarCarta(event){
     event.preventDefault();
+    const token = localStorage.getItem("funcionarioToken");
 
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
-    const defensa = parseInt(document.getElementById("defesa").value);
+    const defesa = parseInt(document.getElementById("defesa").value);
     const preco = parseFloat(document.getElementById("preco").value);
     const quantidade = parseInt(document.getElementById("quantidade").value);
 
@@ -260,15 +261,10 @@ async function criarCarta(event){
         const resposta = await fetch(API_CARTAS, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token 
             },
-            body: JSON.stringify({
-                nome: nome,
-                atk: atk,
-                defesa: defensa,
-                preco: preco,
-                quantidade: quantidade
-            })
+            body: JSON.stringify({ nome, atk, defesa, preco, quantidade })
         });
 
         if (!resposta.ok) {
@@ -278,7 +274,7 @@ async function criarCarta(event){
 
         const carta = await resposta.json();
         alert(`Carta criada com sucesso! ID: ${carta.id}`);
-        window.location.href = "index.html";
+        window.location.href = "dashboard-funcionario.html";
     } catch (erro) {
         alert(erro.message);
     }
@@ -301,6 +297,7 @@ async function carregarCarta(id) {
 }
 
 async function editarCarta(id) {
+    const token = localStorage.getItem("funcionarioToken");
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
     const defesa = parseInt(document.getElementById("defesa").value);
@@ -311,15 +308,10 @@ async function editarCarta(id) {
         const resposta = await fetch(`${API_CARTAS}/${id}`, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
-            body: JSON.stringify({
-                nome: nome,
-                atk: atk,
-                defesa: defesa,
-                preco: preco,
-                quantidade: quantidade
-            })
+            body: JSON.stringify({ nome, atk, defesa, preco, quantidade })
         });
 
         if (!resposta.ok) {
@@ -328,20 +320,22 @@ async function editarCarta(id) {
         }
 
         alert("Carta atualizada com sucesso!");
-        window.location.href = "index.html";
+        window.location.href = "dashboard-funcionario.html";
     } catch (erro) {
         alert(erro.message);
     }
 }
 
 async function deletarCarta(id) {
-    if (!confirm("Tem certeza que deseja excluir esta carta?")) {
-        return;
-    }
+    if (!confirm("Tem certeza que deseja excluir esta carta?")) return;
+    const token = localStorage.getItem("funcionarioToken");
 
     try {
         const resposta = await fetch(`${API_CARTAS}/${id}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                "Authorization": "Bearer " + token 
+            }
         });
 
         if (!resposta.ok) {
@@ -350,7 +344,7 @@ async function deletarCarta(id) {
         }
 
         alert("Carta excluída com sucesso!");
-        listarCartas();
+        listarCartasAdmin();
     } catch (erro) {
         alert(erro.message);
     }
@@ -406,6 +400,7 @@ async function carregarCliente(id) {
 }
 
 async function editarCliente(id) {
+    const token = localStorage.getItem("funcionarioToken");
     const nome = document.getElementById("nome").value;
     const dataDeNascimento = document.getElementById("dataDeNascimento").value;
     const genero = document.getElementById("genero").value;
@@ -414,13 +409,10 @@ async function editarCliente(id) {
         const resposta = await fetch(`${API_CLIENTES}/${id}`, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
-            body: JSON.stringify({
-                nome: nome,
-                dataDeNascimento: dataDeNascimento,
-                genero: genero
-            })
+            body: JSON.stringify({ nome, dataDeNascimento, genero })
         });
 
         if (!resposta.ok) {
@@ -429,20 +421,22 @@ async function editarCliente(id) {
         }
 
         alert("Cliente atualizado com sucesso!");
-        window.location.href = "clientes.html";
+        window.location.href = "dashboard-funcionario.html";
     } catch (erro) {
         alert(erro.message);
     }
 }
 
 async function deletarCliente(id) {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) {
-        return;
-    }
+    if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
+    const token = localStorage.getItem("funcionarioToken");
 
     try {
         const resposta = await fetch(`${API_CLIENTES}/${id}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                "Authorization": "Bearer " + token 
+            }
         });
 
         if (!resposta.ok) {
@@ -451,7 +445,7 @@ async function deletarCliente(id) {
         }
 
         alert("Cliente excluído com sucesso!");
-        listarClientes();
+        listarClientesAdmin();
     } catch (erro) {
         alert(erro.message);
     }
@@ -673,7 +667,7 @@ async function listarClientesAdmin(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarClientesAdmin(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -682,7 +676,7 @@ async function listarClientesAdmin(page = 1) {
                 btn.innerText = p;
                 btn.disabled = (p === "..." || parseInt(p) === resultado.page);
                 if (p !== "...") {
-                    btn.onclick = () => listarClientesAdmin(parseInt(p));
+                    btn.onclick = () => pesquisarClientesAdmin(parseInt(p));
                 }
                 paginacaoDiv.appendChild(btn);
             });
@@ -691,7 +685,7 @@ async function listarClientesAdmin(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarClientesAdmin(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
