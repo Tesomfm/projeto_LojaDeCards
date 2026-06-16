@@ -22,7 +22,6 @@ def atualizar_carta(db: Session, carta_id: int, dados: CartaUpdate):
         return None
     atualizacoes = dados.model_dump(exclude_unset=True)
     for campo, valor in atualizacoes.items():
-        carta.campo = valor
         setattr(carta, campo, valor)
     db.commit()
     db.refresh(carta)
