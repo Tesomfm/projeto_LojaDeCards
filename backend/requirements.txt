@@ -50,3 +50,8 @@ typing_extensions==4.15.0
 tzdata==2025.2
 unicorn==2.1.4
 wcwidth==0.2.14
+fastapi==0.136.1
+uvicorn>=0.30.0
+SQLAlchemy==2.0.49
+pydantic==2.13.3
+python-jose[cryptography]>=3.3.0
