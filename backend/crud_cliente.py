@@ -1,4 +1,5 @@
 from auth import obter_hash_senha
+from email_utils import enviar_email_boas_vindas
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from modelos_cliente import Cliente
@@ -13,8 +14,6 @@ def buscar_cliente(db: Session, cliente_id: int):
     return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
 def criar_cliente(db: Session, dados: CriarCliente):
-    print("🚨🚨🚨 CHEGOU NO BACKEND! 🚨🚨🚨")
-    print(f"Tamanho da senha recebida: {len(dados.senha)} caracteres")
     existente = db.query(Cliente).filter(Cliente.email == dados.email).first()
     if existente:
         raise HTTPException(status_code=400, detail="Opa, esté E-mail já cadastrado.")
@@ -25,6 +24,8 @@ def criar_cliente(db: Session, dados: CriarCliente):
     db.add(cliente)
     db.commit()
     db.refresh(cliente)
+
+    enviar_email_boas_vindas(cliente.email, cliente.nome)
     return cliente
 
 def atualizar_cliente(db: Session, cliente_id: int, dados: ClienteUpdate):

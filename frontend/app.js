@@ -654,7 +654,7 @@ async function listarClientesAdmin(page = 1) {
                 <td>${cliente.genero}</td>
                 <td>
                     <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
-                    <button onclick="deletarClienteAdmin(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                    <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                 </td>
             </tr>
             `;
@@ -722,7 +722,7 @@ async function pesquisarClientesAdmin(page = 1) {
                     <td>${cliente.genero}</td>
                     <td>
                         <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
-                        <button onclick="deletarClienteAdmin(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                        <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                     </td>
             </tr>
             `;
