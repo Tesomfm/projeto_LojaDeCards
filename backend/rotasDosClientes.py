@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from auth import criar_token, verificar_token 
+from auth import criar_token, obter_hash_senha, verificar_token, verificar_senha
 import crud_cliente
 from database import get_db
 from modelos_cliente import Cliente
@@ -36,7 +36,7 @@ def validar_token(credenciais: HTTPAuthorizationCredentials = Depends(token_auth
 def login(dados: LoginCliente, db: Session = Depends(get_db)):
     cliente = crud_cliente.buscar_cliente_por_email(db, dados.email)
     
-    if not cliente or cliente.senha != dados.senha:
+    if not cliente or not verificar_senha(dados.senha, cliente.senha):
         raise HTTPException(
             status_code=401, 
             detail="E-mail ou senha incorretos! Tente novamente."
@@ -104,3 +104,24 @@ def atualizar(cliente_id: int, dados: ClienteUpdate, db: Session = Depends(get_d
 @rotas.delete("/{cliente_id}", status_code=204)
 def deletar(cliente_id: int, db: Session = Depends(get_db), token: dict = Depends(validar_token)):
     crud_cliente.deletar_cliente(db, cliente_id)
+
+@rotas.post("/funcionario/login")
+def login_funcionario(dados: LoginFuncionario):
+    USUARIOS_PERMITIDOS = ["kaio", "matheus"]
+    SENHA_MOCK_HASH = obter_hash_senha("kaibamen")
+    
+    if dados.usuario not in USUARIOS_PERMITIDOS or not verificar_senha(dados.senha, SENHA_MOCK_HASH):
+        raise HTTPException(
+            status_code=401, 
+            detail="Chave de acesso inválida para Funcionários!"
+        )
+    nome_exibicao = "Kaio Admin" if dados.usuario == "kaio" else "Matheus Admin"
+    payload = {
+        "sub": dados.usuario,
+        "nome": nome_exibicao,
+        "cargo": "Administrador"
+    }
+    token = criar_token(payload)
+    return {
+        "access_token": token
+    }

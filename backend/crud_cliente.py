@@ -1,3 +1,4 @@
+from auth import obter_hash_senha
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from modelos_cliente import Cliente
@@ -12,10 +13,15 @@ def buscar_cliente(db: Session, cliente_id: int):
     return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
 def criar_cliente(db: Session, dados: CriarCliente):
+    print("🚨🚨🚨 CHEGOU NO BACKEND! 🚨🚨🚨")
+    print(f"Tamanho da senha recebida: {len(dados.senha)} caracteres")
     existente = db.query(Cliente).filter(Cliente.email == dados.email).first()
     if existente:
         raise HTTPException(status_code=400, detail="Opa, esté E-mail já cadastrado.")
-    cliente = Cliente(**dados.model_dump())
+    
+    dados_dict = dados.model_dump()
+    dados_dict["senha"] = obter_hash_senha(dados_dict["senha"])
+    cliente = Cliente(**dados_dict)
     db.add(cliente)
     db.commit()
     db.refresh(cliente)
@@ -26,8 +32,13 @@ def atualizar_cliente(db: Session, cliente_id: int, dados: ClienteUpdate):
     if not cliente:
         return None
     atualizacoes = dados.model_dump(exclude_unset=True)
+
+    if "senha" in atualizacoes:
+        atualizacoes["senha"] = obter_hash_senha(atualizacoes["senha"])
+        
     for campo, valor in atualizacoes.items():
         setattr(cliente, campo, valor)
+        
     db.commit()
     db.refresh(cliente)
     return cliente
@@ -38,7 +49,7 @@ def substituir_cliente(db: Session, cliente_id: int, dados: CriarCliente):
         return None
     cliente.nome = dados.nome
     cliente.email = dados.email
-    cliente.senha = dados.senha
+    cliente.senha = obter_hash_senha(dados.senha)
     cliente.dataDeNascimento = dados.dataDeNascimento
     cliente.genero = dados.genero
     db.commit()
