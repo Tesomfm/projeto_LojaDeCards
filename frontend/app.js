@@ -32,6 +32,112 @@ function atualizarInterfaceAutenticacao() {
     }
 }
 
+function mostrarToast(message, variant = "info") {
+    let container = document.getElementById("toast-container-global");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container-global";
+        container.className = "toast-container position-fixed bottom-0 end-0 p-3";
+        container.style.zIndex = "1055";
+        document.body.appendChild(container);
+    }
+
+    const toastEl = document.createElement("div");
+    toastEl.className = `toast align-items-center text-bg-${variant} border-0 mb-2`;
+    toastEl.setAttribute("role", "alert");
+    toastEl.setAttribute("aria-live", "assertive");
+    toastEl.setAttribute("aria-atomic", "true");
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    container.appendChild(toastEl);
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+}
+
+function mostrarConfirmModal(title, message, onConfirm) {
+    let modalEl = document.getElementById("globalConfirmModal");
+    if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.id = "globalConfirmModal";
+        modalEl.className = "modal fade";
+        modalEl.tabIndex = "-1";
+        document.body.appendChild(modalEl);
+    }
+
+    modalEl.innerHTML = `
+        <div class="modal-dialog text-dark">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${title}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>${message}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmarAcao">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    document.getElementById("btnConfirmarAcao").onclick = () => {
+        modal.hide();
+        onConfirm();
+    };
+}
+
+function mostrarPromptModal(title, message, onConfirm) {
+    let modalEl = document.getElementById("globalPromptModal");
+    if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.id = "globalPromptModal";
+        modalEl.className = "modal fade";
+        modalEl.tabIndex = "-1";
+        document.body.appendChild(modalEl);
+    }
+
+    modalEl.innerHTML = `
+        <div class="modal-dialog text-dark">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">${title}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label>${message}</label>
+                    <input type="number" id="promptInput" class="form-control mt-2" value="1" min="1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnPromptConfirmar">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    document.getElementById("btnPromptConfirmar").onclick = () => {
+        const val = document.getElementById("promptInput").value;
+        modal.hide();
+        onConfirm(val);
+    };
+}
+
 async function loginCliente(event) {
     event.preventDefault();
     const email = document.getElementById("loginEmail").value;
@@ -54,24 +160,24 @@ async function loginCliente(event) {
             id: dados.id,
             nome: dados.nome
         }));
-        alert("Login realizado com sucesso!");
-        window.location.href = "index.html";
+        mostrarToast("Login realizado com sucesso!", "success");
+        setTimeout(() => window.location.href = "index.html", 1000);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 function logoutCliente() {
     localStorage.removeItem("clienteToken");
-    alert("Sessão encerrada.");
-    window.location.reload();
+    mostrarToast("Sessão encerrada.", "info");
+    setTimeout(() => window.location.reload(), 1000);
 }
 
 async function comprarCarta(cartaId) {
     const token = localStorage.getItem("clienteToken");
     if (!token) {
-        alert("Ação negada! Você precisa estar logado no sistema para comprar cartas.");
-        window.location.href = "login.html";
+        mostrarToast("Ação negada! Você precisa estar logado no sistema para comprar cartas.", "danger");
+        setTimeout(() => window.location.href = "login.html", 1000);
         return;
     }
 
@@ -81,7 +187,7 @@ async function comprarCarta(cartaId) {
     if (qtdInformada === null) return;
     const quantidade = parseInt(qtdInformada);
     if (isNaN(quantidade) || quantidade <= 0) {
-        alert("Quantidade inválida informada.");
+        mostrarToast("Quantidade inválida informada.", "warning");
         return;
     }
 
@@ -104,11 +210,11 @@ async function comprarCarta(cartaId) {
             throw new Error(erro.detail || "Erro ao processar compra. Verifique o estoque da carta.");
         }
 
-        alert("Compra efetuada com sucesso!");
+        mostrarToast("Compra efetuada com sucesso!", "success");
         listarCartas();
 
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 //clientes ussa
@@ -173,8 +279,7 @@ async function listarCartas(page = 1) {
     } catch (erro) {
         const erroDiv = document.getElementById("erro");
         if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
+            mostrarToast(erro.message, "danger");
         }
     }
 }
@@ -241,8 +346,7 @@ async function pesquisarCartas(page = 1) {
     } catch (erro) {
         const erroDiv = document.getElementById("erro");
         if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
+            mostrarToast(erro.message, "danger");
         }
     }
 }
@@ -273,10 +377,10 @@ async function criarCarta(event){
         }
 
         const carta = await resposta.json();
-        alert(`Carta criada com sucesso! ID: ${carta.id}`);
-        window.location.href = "dashboard-funcionario.html";
+        mostrarToast(`Carta criada com sucesso! ID: ${carta.id}`, "success");
+        setTimeout(()=> window.location.href = "dashboard-funcionario.html", 1500);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -292,7 +396,7 @@ async function carregarCarta(id) {
         document.getElementById("preco").value = carta.preco;
         document.getElementById("quantidade").value = carta.quantidade;
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -319,35 +423,37 @@ async function editarCarta(id) {
             throw new Error(erro.detail || "Erro ao atualizar carta");
         }
 
-        alert("Carta atualizada com sucesso!");
-        window.location.href = "dashboard-funcionario.html";
+        mostrarToast("Carta atualizada com sucesso!", "success");
+        setTimeout(()=> window.location.href = "dashboard-funcionario.html", 1500);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 async function deletarCarta(id) {
-    if (!confirm("Tem certeza que deseja excluir esta carta?")) return;
-    const token = localStorage.getItem("funcionarioToken");
+    showConfirmModal(
+        "Excluir Carta", 
+        "Tem certeza que deseja excluir esta carta? ESTA AÇÃO NÃO PODE SER DESFEITA.", 
+        async () => {
+            const token = localStorage.getItem("funcionarioToken");
+            try {
+                const resposta = await fetch(`${API_CARTAS}/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
 
-    try {
-        const resposta = await fetch(`${API_CARTAS}/${id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": "Bearer " + token 
+                if (!resposta.ok) {
+                    const erro = await resposta.json();
+                    throw new Error(erro.detail || "Erro ao excluir carta");
+                }
+
+                mostrarToast("Carta excluída com sucesso!", "success");
+                listarCartasAdmin();
+            } catch (erro) {
+                mostrarToast(erro.message, "danger");
             }
-        });
-
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao excluir carta");
         }
-
-        alert("Carta excluída com sucesso!");
-        listarCartasAdmin();
-    } catch (erro) {
-        alert(erro.message);
-    }
+    );
 }
 
 async function criarCliente(event){
@@ -378,10 +484,10 @@ async function criarCliente(event){
             throw new Error(erro.detail || "Erro ao salvar cliente");
         }
         const cliente = await resposta.json();
-        alert("Cliente criado com sucesso! ID: " + cliente.id);
-        window.location.href = "login.html"; 
+        mostrarToast("Cliente criado com sucesso! ID: " + cliente.id, "success");
+        setTimeout(()=> window.location.href = "login.html", 1500); 
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -395,7 +501,7 @@ async function carregarCliente(id) {
         document.getElementById("dataDeNascimento").value = cliente.dataDeNascimento;
         document.getElementById("genero").value = cliente.genero;
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -420,35 +526,37 @@ async function editarCliente(id) {
             throw new Error(erro.detail || "Erro ao atualizar cliente");
         }
 
-        alert("Cliente atualizado com sucesso!");
-        window.location.href = "dashboard-funcionario.html";
+        mostrarToast("Cliente atualizado com sucesso!", "success");
+        setTimeout(() => window.location.href = "dashboard-funcionario.html", 1500);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 async function deletarCliente(id) {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
-    const token = localStorage.getItem("funcionarioToken");
+    showConfirmModal(
+        "Remover Cliente", 
+        "Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.", 
+        async () => {
+            const token = localStorage.getItem("funcionarioToken");
+            try {
+                const resposta = await fetch(`${API_CLIENTES}/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
 
-    try {
-        const resposta = await fetch(`${API_CLIENTES}/${id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": "Bearer " + token 
+                if (!resposta.ok) {
+                    const erro = await resposta.json();
+                    throw new Error(erro.detail || "Erro ao excluir cliente");
+                }
+
+                mostrarToast("Cliente excluído com sucesso!", "success");
+                listarClientesAdmin();
+            } catch (erro) {
+                mostrarToast(erro.message, "danger");
             }
-        });
-
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao excluir cliente");
         }
-
-        alert("Cliente excluído com sucesso!");
-        listarClientesAdmin();
-    } catch (erro) {
-        alert(erro.message);
-    }
+    );
 }
 
 async function loginFuncionario(event) {
@@ -470,13 +578,11 @@ async function loginFuncionario(event) {
         }
         const dados = await resposta.json();
 
-        // Salva o token JWT
         localStorage.setItem("funcionarioToken", dados.access_token);
 
         window.location.href = "dashboard-funcionario.html";
     } catch (erro) {
-        campoErro.innerText = erro.message;
-        campoErro.classList.remove("d-none");
+        mostrarToast(erro.message, "danger");
     }
 }
 function logoutFuncionario() {
@@ -556,11 +662,7 @@ async function listarCartasAdmin(page = 1) {
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -623,11 +725,7 @@ async function pesquisarCartasAdmin(page = 1) {
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -690,11 +788,7 @@ async function listarClientesAdmin(page = 1) {
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -758,10 +852,6 @@ async function pesquisarClientesAdmin(page = 1) {
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
