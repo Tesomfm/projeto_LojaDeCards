@@ -37,6 +37,5 @@ Equipe Kaiba Corp."""
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
             smtp.login(EMAIL_REMETENTE, SENHA_REMETENTE)
             smtp.send_message(msg)
-            print(f"E-mail de boas-vindas enviado com sucesso para {email_destino}!")
     except Exception as erro:
-        print(f"Erro ao enviar o e-mail: {erro}")
+        print(f"Erro ao enviar e-mail: {erro}")

@@ -174,48 +174,49 @@ function logoutCliente() {
 }
 
 async function comprarCarta(cartaId) {
-    const token = localStorage.getItem("clienteToken");
+   const token = localStorage.getItem("clienteToken");
     if (!token) {
-        mostrarToast("Ação negada! Você precisa estar logado no sistema para comprar cartas.", "danger");
-        setTimeout(() => window.location.href = "login.html", 1000);
+        mostrarToast("Ação negada! Você precisa estar logado no sistema para comprar cartas.", "warning");
+        setTimeout(() => window.location.href = "login.html", 1500);
         return;
     }
 
     const payload = parseJwt(token);
-
-    const qtdInformada = prompt("Quantas unidades desta carta deseja comprar?", "1");
-    if (qtdInformada === null) return;
-    const quantidade = parseInt(qtdInformada);
-    if (isNaN(quantidade) || quantidade <= 0) {
-        mostrarToast("Quantidade inválida informada.", "warning");
-        return;
-    }
-
-    try {
-        const resposta = await fetch(API_COMPRAS, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer " + token
-            },
-            body: JSON.stringify({
-                cliente_id: payload.id,
-                carta_id: cartaId,
-                quantidade: quantidade
-            })
-        });
-
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao processar compra. Verifique o estoque da carta.");
+    
+    mostrarPromptModal("Comprar Carta", "Quantas unidades desta carta deseja comprar?", async (qtdInformada) => {
+        const quantidade = parseInt(qtdInformada);
+        
+        if (isNaN(quantidade) || quantidade <= 0) {
+            mostrarToast("Quantidade inválida informada.", "warning");
+            return;
         }
 
-        mostrarToast("Compra efetuada com sucesso!", "success");
-        listarCartas();
+        try {
+            const resposta = await fetch(API_COMPRAS, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    cliente_id: payload.id,
+                    carta_id: cartaId,
+                    quantidade: quantidade
+                })
+            });
 
-    } catch (erro) {
-        mostrarToast(erro.message, "danger");
-    }
+            if (!resposta.ok) {
+                const erro = await resposta.json();
+                throw new Error(erro.detail || "Erro ao processar compra. Verifique o estoque da carta.");
+            }
+
+            mostrarToast("Compra efetuada com sucesso!", "success");
+            listarCartas();
+
+        } catch (erro) {
+            mostrarToast(erro.message, "danger");
+        }
+    });
 }
 //clientes ussa
 async function listarCartas(page = 1) {
@@ -431,7 +432,7 @@ async function editarCarta(id) {
 }
 
 async function deletarCarta(id) {
-    showConfirmModal(
+    mostrarConfirmModal(
         "Excluir Carta", 
         "Tem certeza que deseja excluir esta carta? ESTA AÇÃO NÃO PODE SER DESFEITA.", 
         async () => {
@@ -466,7 +467,7 @@ async function criarCliente(event){
     const genero = document.getElementById("genero").value;
 
     try {
-        const resposta = await fetch(API_CLIENTES, {
+        const resposta = await fetch(API_CLIENTES, {    
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -485,7 +486,7 @@ async function criarCliente(event){
         }
         const cliente = await resposta.json();
         mostrarToast("Cliente criado com sucesso! ID: " + cliente.id, "success");
-        setTimeout(()=> window.location.href = "login.html", 1500); 
+        setTimeout(()=> window.location.href = "login.html", 3000); 
     } catch (erro) {
         mostrarToast(erro.message, "danger");
     }
@@ -534,7 +535,7 @@ async function editarCliente(id) {
 }
 
 async function deletarCliente(id) {
-    showConfirmModal(
+    mostrarConfirmModal(
         "Remover Cliente", 
         "Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.", 
         async () => {
@@ -580,14 +581,16 @@ async function loginFuncionario(event) {
 
         localStorage.setItem("funcionarioToken", dados.access_token);
 
-        window.location.href = "dashboard-funcionario.html";
+        mostrarToast("Autenticação realizada com sucesso! Entrando no painel...", "success");
+        setTimeout(() => window.location.href = "dashboard-funcionario.html", 1000);
     } catch (erro) {
         mostrarToast(erro.message, "danger");
     }
 }
 function logoutFuncionario() {
     localStorage.removeItem("funcionarioToken");
-    window.location.href = "login-funcionario.html";
+    mostrarToast("Autenticação encerrada! Redirecionando para a página de login...", "success");
+    setTimeout(() => window.location.href = "login-funcionario.html", 1000);
 }
 
 function mudarPainelAdmin(painel) {
@@ -627,7 +630,7 @@ async function listarCartasAdmin(page = 1) {
                 <td>${carta.quantidade} un</td>
                 <td>
                     <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm me-1">✏️ Editar</a>
-                    <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
+                    <button type="button" onclick="event.preventDefault(); deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
                 </td>
             `;
         });
@@ -690,7 +693,7 @@ async function pesquisarCartasAdmin(page = 1) {
                     <td>${carta.quantidade} un</td>
                     <td>
                         <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm me-1">✏️ Editar</a>
-                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
+                        <button type="button" onclick="event.preventDefault(); deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                     </td>
             `;
         });
@@ -752,7 +755,7 @@ async function listarClientesAdmin(page = 1) {
                 <td>${cliente.genero}</td>
                 <td>
                     <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
-                    <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                    <button type="button" onclick="event.preventDefault(); deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                 </td>
             </tr>
             `;
@@ -816,7 +819,7 @@ async function pesquisarClientesAdmin(page = 1) {
                     <td>${cliente.genero}</td>
                     <td>
                         <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
-                        <button onclick="deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                        <button type="button" onclick="event.preventDefault(); deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                     </td>
             </tr>
             `;
