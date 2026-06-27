@@ -1,13 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException , Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from auth import criar_token
+from auth import criar_token, obter_hash_senha, verificar_token, verificar_senha
 import crud_cliente
 from database import get_db
 from modelos_cliente import Cliente
 from schemas_cliente import CriarCliente, ClienteResponse, ClienteUpdate, LoginCliente, LoginFuncionario
 
 rotas = APIRouter(prefix="/cliente", tags=["clientes"])
+
+token_auth_scheme = HTTPBearer(auto_error=False)
 
 def gerar_paginacao(page: int, total_pages: int, window: int = 2):
     paginas = []
@@ -21,22 +24,41 @@ def gerar_paginacao(page: int, total_pages: int, window: int = 2):
         paginas.append(str(total_pages))
     return paginas
 
-@rotas.post("/funcionario/login")
-def login_funcionario(dados: LoginFuncionario):
-    if dados.senha != "kaibamen":
-        raise HTTPException(status_code=401, detail="Chave de acesso inválida para Funcionários")
-    
-    token = criar_token({"sub": dados.usuario, "role": "funcionario"})
-    return {"access_token": token, "token_type": "bearer"}
+def validar_token(credenciais: HTTPAuthorizationCredentials = Depends(token_auth_scheme)):
+    if not credenciais:
+        raise HTTPException(status_code=401, detail="Token de autorização ausente.")
+    payload = verificar_token(credenciais.credentials)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
+    return payload
 
 @rotas.post("/login")
 def login(dados: LoginCliente, db: Session = Depends(get_db)):
-    cliente = db.query(Cliente).filter(Cliente.email == dados.email).first()
-    if not cliente or cliente.senha != dados.senha:
-        raise HTTPException(status_code=401, detail="Credenciais inválidas")
+    cliente = crud_cliente.buscar_cliente_por_email(db, dados.email)
     
-    token = criar_token({"sub": cliente.email, "id": cliente.id,"nome": cliente.nome, "role": "cliente"})
-    return {"access_token": token, "token_type": "bearer"}
+    if not cliente or not verificar_senha(dados.senha, cliente.senha):
+        raise HTTPException(
+            status_code=401, 
+            detail="E-mail ou senha incorretos! Tente novamente."
+        )
+    
+    payload = {
+        "sub": cliente.email,
+        "id": cliente.id,
+        "nome": cliente.nome
+    }
+    
+    token = criar_token(payload)
+    
+    return {
+        "access_token": token,
+        "id": cliente.id,
+        "nome": cliente.nome
+    }
+
+@rotas.get("/")
+def listar(db: Session = Depends(get_db)):
+    return crud_cliente.listar_clientes(db)
 
 @rotas.get("/pesquisar")
 def pesquisar(
@@ -61,35 +83,45 @@ def pesquisar(
         "data": clientes
     }
 
-@rotas.get("/", response_model=list[ClienteResponse])
-def listar(db: Session = Depends(get_db)):
-    return crud_cliente.listar_clientes(db)
-
-@rotas.get("/{cliente_id}", response_model=ClienteResponse)
-def buscar(cliente_id: int, db: Session = Depends(get_db)):
-    cliente = crud_cliente.buscar_cliente(db, cliente_id)
-    if not cliente:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado.")
-    return cliente
-
 @rotas.post("/", response_model=ClienteResponse, status_code=201)
 def criar(dados: CriarCliente, db: Session = Depends(get_db)):
     return crud_cliente.criar_cliente(db, dados)
 
 @rotas.put("/{cliente_id}", response_model=ClienteResponse)
-def substituir(cliente_id: int, dados: CriarCliente, db: Session = Depends(get_db)):
+def substituir(cliente_id: int, dados: CriarCliente, db: Session = Depends(get_db), token: dict = Depends(validar_token)):
     cliente = crud_cliente.substituir_cliente(db, cliente_id, dados)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")
     return cliente
 
 @rotas.patch("/{cliente_id}", response_model=ClienteResponse)
-def atualizar(cliente_id: int, dados: ClienteUpdate, db: Session = Depends(get_db)):
+def atualizar(cliente_id: int, dados: ClienteUpdate, db: Session = Depends(get_db), token: dict = Depends(validar_token)):
     cliente = crud_cliente.atualizar_cliente(db, cliente_id, dados)
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado.")
     return cliente
 
 @rotas.delete("/{cliente_id}", status_code=204)
-def deletar(cliente_id: int, db: Session = Depends(get_db)):
+def deletar(cliente_id: int, db: Session = Depends(get_db), token: dict = Depends(validar_token)):
     crud_cliente.deletar_cliente(db, cliente_id)
+
+@rotas.post("/funcionario/login")
+def login_funcionario(dados: LoginFuncionario):
+    USUARIOS_PERMITIDOS = ["kaio", "matheus"]
+    SENHA_MOCK_HASH = obter_hash_senha("kaibamen")
+    
+    if dados.usuario not in USUARIOS_PERMITIDOS or not verificar_senha(dados.senha, SENHA_MOCK_HASH):
+        raise HTTPException(
+            status_code=401, 
+            detail="Chave de acesso inválida para Funcionários!"
+        )
+    nome_exibicao = "Kaio Admin" if dados.usuario == "kaio" else "Matheus Admin"
+    payload = {
+        "sub": dados.usuario,
+        "nome": nome_exibicao,
+        "cargo": "Administrador"
+    }
+    token = criar_token(payload)
+    return {
+        "access_token": token
+    }

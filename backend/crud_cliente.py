@@ -1,3 +1,5 @@
+from auth import obter_hash_senha
+from email_utils import enviar_email_boas_vindas
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from modelos_cliente import Cliente
@@ -6,6 +8,8 @@ from schemas_cliente import CriarCliente, ClienteUpdate
 def listar_clientes(db: Session):
     return db.query(Cliente).all()
 
+def buscar_cliente_por_email(db: Session, email: str):
+    return db.query(Cliente).filter(Cliente.email == email).first()
 def buscar_cliente(db: Session, cliente_id: int):
     return db.query(Cliente).filter(Cliente.id == cliente_id).first()
 
@@ -13,10 +17,15 @@ def criar_cliente(db: Session, dados: CriarCliente):
     existente = db.query(Cliente).filter(Cliente.email == dados.email).first()
     if existente:
         raise HTTPException(status_code=400, detail="Opa, esté E-mail já cadastrado.")
-    cliente = Cliente(**dados.model_dump())
+    
+    dados_dict = dados.model_dump()
+    dados_dict["senha"] = obter_hash_senha(dados_dict["senha"])
+    cliente = Cliente(**dados_dict)
     db.add(cliente)
     db.commit()
     db.refresh(cliente)
+
+    enviar_email_boas_vindas(cliente.email, cliente.nome)
     return cliente
 
 def atualizar_cliente(db: Session, cliente_id: int, dados: ClienteUpdate):
@@ -24,8 +33,13 @@ def atualizar_cliente(db: Session, cliente_id: int, dados: ClienteUpdate):
     if not cliente:
         return None
     atualizacoes = dados.model_dump(exclude_unset=True)
+
+    if "senha" in atualizacoes:
+        atualizacoes["senha"] = obter_hash_senha(atualizacoes["senha"])
+        
     for campo, valor in atualizacoes.items():
         setattr(cliente, campo, valor)
+        
     db.commit()
     db.refresh(cliente)
     return cliente
@@ -36,7 +50,7 @@ def substituir_cliente(db: Session, cliente_id: int, dados: CriarCliente):
         return None
     cliente.nome = dados.nome
     cliente.email = dados.email
-    cliente.senha = dados.senha
+    cliente.senha = obter_hash_senha(dados.senha)
     cliente.dataDeNascimento = dados.dataDeNascimento
     cliente.genero = dados.genero
     db.commit()
