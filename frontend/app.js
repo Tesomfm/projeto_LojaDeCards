@@ -63,7 +63,6 @@ function mostrarToast(message, variant = "info") {
 }
 
 function mostrarConfirmModal(title, message, onConfirm) {
-    // Procura o modal, se não existir, cria no final do body sem afetar outras divs
     let modalEl = document.getElementById("globalConfirmModal");
     if (!modalEl) {
         modalEl = document.createElement("div");
@@ -73,7 +72,6 @@ function mostrarConfirmModal(title, message, onConfirm) {
         document.body.appendChild(modalEl);
     }
 
-    // Design Dark Premium Corporativo (Borda Vermelha)
     modalEl.innerHTML = `
         <div class="modal-dialog text-light modal-dialog-centered">
             <div class="modal-content bg-dark border border-danger shadow-lg" style="border-radius: 12px;">
@@ -104,7 +102,6 @@ function mostrarConfirmModal(title, message, onConfirm) {
 }
 
 function mostrarPromptModal(title, message, onConfirm) {
-    // Procura o modal, se não existir, cria no final do body sem afetar outras divs
     let modalEl = document.getElementById("globalPromptModal");
     if (!modalEl) {
         modalEl = document.createElement("div");
@@ -149,7 +146,7 @@ async function loginCliente(event) {
     const senha = document.getElementById("loginSenha").value;
 
     try {
-        const resposta = await fetch("http://localhost:8000/cliente/login", {
+        const resposta = await fetch("https://projeto-lojadecards.onrender.com/cliente/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, senha })
@@ -573,7 +570,7 @@ async function loginFuncionario(event) {
 
     campoErro.classList.add("d-none");
     try {
-        const resposta = await fetch("http://localhost:8000/cliente/funcionario/login", {
+        const resposta = await fetch("https://projeto-lojadecards.onrender.com/cliente/funcionario/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuario, senha })

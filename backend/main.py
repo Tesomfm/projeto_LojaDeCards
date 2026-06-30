@@ -13,8 +13,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="API projeto loja de cartas")
 
 origins =[
-    "https://projeto-loja-de-cards.vercel.app/",
-    "http://localhost:3000",
+    "https://projeto-loja-de-cards.vercel.app"
 ]
 app.add_middleware(
     CORSMiddleware,
