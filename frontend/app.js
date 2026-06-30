@@ -1,6 +1,6 @@
-const API_CARTAS = "http://localhost:8000/carta";
-const API_CLIENTES = "http://localhost:8000/cliente";
-const API_COMPRAS = "http://localhost:8000/compra";
+const API_CARTAS = "https://projeto-lojadecards.onrender.com/carta";
+const API_CLIENTES = "https://projeto-lojadecards.onrender.com/cliente";
+const API_COMPRAS = "https://projeto-lojadecards.onrender.com/compra";
 
 function parseJwt(token) {
     try {
@@ -73,18 +73,20 @@ function mostrarConfirmModal(title, message, onConfirm) {
     }
 
     modalEl.innerHTML = `
-        <div class="modal-dialog text-dark">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">${title}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-dialog text-light modal-dialog-centered">
+            <div class="modal-content bg-dark border border-danger shadow-lg" style="border-radius: 12px;">
+                <div class="modal-header border-secondary bg-black bg-gradient py-3" style="border-top-left-radius: 11px; border-top-right-radius: 11px;">
+                    <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                        ⚠️ ${title}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <p>${message}</p>
+                <div class="modal-body fs-5 py-4 px-4 bg-dark bg-gradient">
+                    <p class="mb-0 text-secondary-emphasis" style="line-height: 1.6;">${message}</p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnConfirmarAcao">Confirmar</button>
+                <div class="modal-footer border-secondary bg-black bg-gradient py-3">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger px-4 fw-bold shadow-sm" id="btnConfirmarAcao">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -108,21 +110,22 @@ function mostrarPromptModal(title, message, onConfirm) {
         modalEl.tabIndex = "-1";
         document.body.appendChild(modalEl);
     }
-
     modalEl.innerHTML = `
-        <div class="modal-dialog text-dark">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">${title}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-dialog text-light modal-dialog-centered">
+            <div class="modal-content bg-dark border border-warning shadow-lg" style="border-radius: 12px;">
+                <div class="modal-header border-secondary bg-black bg-gradient py-3" style="border-top-left-radius: 11px; border-top-right-radius: 11px;">
+                    <h5 class="modal-title fw-bold text-warning d-flex align-items-center gap-2">
+                        🛒 ${title}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <label>${message}</label>
-                    <input type="number" id="promptInput" class="form-control mt-2" value="1" min="1">
+                <div class="modal-body py-4 px-4 bg-dark bg-gradient">
+                    <label class="form-label fw-semibold text-light mb-2 fs-5">${message}</label>
+                    <input type="number" id="promptInput" class="form-control form-control-lg text-center fw-bold text-warning bg-black border-secondary" value="1" min="1" style="max-width: 150px; margin: 0 auto; font-size: 1.5rem;">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="btnPromptConfirmar">Confirmar</button>
+                <div class="modal-footer border-secondary bg-black bg-gradient py-3">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning px-4 fw-bold shadow-sm text-dark" id="btnPromptConfirmar">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -137,7 +140,6 @@ function mostrarPromptModal(title, message, onConfirm) {
         onConfirm(val);
     };
 }
-
 async function loginCliente(event) {
     event.preventDefault();
     const email = document.getElementById("loginEmail").value;
