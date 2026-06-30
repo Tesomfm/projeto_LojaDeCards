@@ -1,6 +1,6 @@
-const API_CARTAS = "https://projeto-lojadecards.onrender.com/carta";
-const API_CLIENTES = "https://projeto-lojadecards.onrender.com/cliente";
-const API_COMPRAS = "https://projeto-lojadecards.onrender.com/compra";
+const API_CARTAS = "https://projeto-lojadecards.onrender.com/carta/";
+const API_CLIENTES = "https://projeto-lojadecards.onrender.com/cliente/";
+const API_COMPRAS = "https://projeto-lojadecards.onrender.com/compra/";
 
 function parseJwt(token) {
     try {
