@@ -63,6 +63,7 @@ function mostrarToast(message, variant = "info") {
 }
 
 function mostrarConfirmModal(title, message, onConfirm) {
+    // Procura o modal, se não existir, cria no final do body sem afetar outras divs
     let modalEl = document.getElementById("globalConfirmModal");
     if (!modalEl) {
         modalEl = document.createElement("div");
@@ -72,6 +73,7 @@ function mostrarConfirmModal(title, message, onConfirm) {
         document.body.appendChild(modalEl);
     }
 
+    // Design Dark Premium Corporativo (Borda Vermelha)
     modalEl.innerHTML = `
         <div class="modal-dialog text-light modal-dialog-centered">
             <div class="modal-content bg-dark border border-danger shadow-lg" style="border-radius: 12px;">
@@ -102,6 +104,7 @@ function mostrarConfirmModal(title, message, onConfirm) {
 }
 
 function mostrarPromptModal(title, message, onConfirm) {
+    // Procura o modal, se não existir, cria no final do body sem afetar outras divs
     let modalEl = document.getElementById("globalPromptModal");
     if (!modalEl) {
         modalEl = document.createElement("div");
