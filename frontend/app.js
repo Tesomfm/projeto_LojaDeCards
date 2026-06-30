@@ -1,6 +1,6 @@
-const API_CARTAS = "http://localhost:8000/carta";
-const API_CLIENTES = "http://localhost:8000/cliente";
-const API_COMPRAS = "http://localhost:8000/compra";
+const API_CARTAS = "https://projeto-lojadecards.onrender.com/carta";
+const API_CLIENTES = "https://projeto-lojadecards.onrender.com/cliente";
+const API_COMPRAS = "https://projeto-lojadecards.onrender.com/compra";
 
 function parseJwt(token) {
     try {
@@ -113,8 +113,6 @@ function mostrarPromptModal(title, message, onConfirm) {
         modalEl.tabIndex = "-1";
         document.body.appendChild(modalEl);
     }
-
-    // Design Dark Loja (Borda Dourada/Warning)
     modalEl.innerHTML = `
         <div class="modal-dialog text-light modal-dialog-centered">
             <div class="modal-content bg-dark border border-warning shadow-lg" style="border-radius: 12px;">
