@@ -146,7 +146,7 @@ async function loginCliente(event) {
     const senha = document.getElementById("loginSenha").value;
 
     try {
-        const resposta = await fetch("http://localhost:8000/cliente/login", {
+        const resposta = await fetch("https://projeto-lojadecards.onrender.com/cliente/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, senha })
@@ -570,7 +570,7 @@ async function loginFuncionario(event) {
 
     campoErro.classList.add("d-none");
     try {
-        const resposta = await fetch("http://localhost:8000/cliente/funcionario/login", {
+        const resposta = await fetch("https://projeto-lojadecards.onrender.com/cliente/funcionario/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ usuario, senha })
