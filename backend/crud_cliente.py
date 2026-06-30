@@ -1,3 +1,4 @@
+import threading
 from auth import obter_hash_senha
 from email_utils import enviar_email_boas_vindas
 from sqlalchemy.orm import Session
@@ -25,7 +26,8 @@ def criar_cliente(db: Session, dados: CriarCliente):
     db.commit()
     db.refresh(cliente)
 
-    enviar_email_boas_vindas(cliente.email, cliente.nome)
+    threading.Thread(target=enviar_email_boas_vindas, args=(cliente.email, cliente.nome)).start()
+
     return cliente
 
 def atualizar_cliente(db: Session, cliente_id: int, dados: ClienteUpdate):

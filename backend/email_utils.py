@@ -34,8 +34,10 @@ Equipe Kaiba Corp."""
     msg.set_content(conteudo)
 
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+        with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+            smtp.starttls()
             smtp.login(EMAIL_REMETENTE, SENHA_REMETENTE)
             smtp.send_message(msg)
+            print("E-mail enviado com sucesso!")
     except Exception as erro:
-        print(f"Erro ao enviar e-mail: {erro}")
+        print(f"Erro CRÍTICO ao enviar e-mail: {erro}")
