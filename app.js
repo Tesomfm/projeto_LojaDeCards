@@ -2,16 +2,26 @@ const API_CARTAS = "http://localhost:8000/carta";
 const API_CLIENTES = "http://localhost:8000/cliente";
 const API_COMPRAS = "http://localhost:8000/compra";
 
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(atob(base64));
+    } catch (e) {
+        return null;
+    }
+}
+
 function atualizarInterfaceAutenticacao() {
     const authArea = document.getElementById("authArea");
     if (!authArea) return;
 
-    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
-
-    if (clienteLogado) {
+    const token = localStorage.getItem("clienteToken");
+    if (token) {
+        const payload = parseJwt(token);
         authArea.innerHTML = `
             <div class="bg-dark border border-secondary p-2 rounded d-flex align-items-center gap-3">
-                <span class="text-light">Logado como: <strong style="color: gold;">${clienteLogado.nome}</strong></span>
+                <span class="text-light">Logado como: <strong style="color: gold;">${payload.nome}</strong></span>
                 <button onclick="logoutCliente()" class="btn btn-outline-danger btn-sm">Sair</button>
             </div>
         `;
@@ -22,100 +32,198 @@ function atualizarInterfaceAutenticacao() {
     }
 }
 
-async function loginCliente(event) {
-    event.preventDefault(); // Impede o formulário de recarregar a página
+function mostrarToast(message, variant = "info") {
+    let container = document.getElementById("toast-container-global");
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toast-container-global";
+        container.className = "toast-container position-fixed bottom-0 end-0 p-3";
+        container.style.zIndex = "1055";
+        document.body.appendChild(container);
+    }
 
+    const toastEl = document.createElement("div");
+    toastEl.className = `toast align-items-center text-bg-${variant} border-0 mb-2`;
+    toastEl.setAttribute("role", "alert");
+    toastEl.setAttribute("aria-live", "assertive");
+    toastEl.setAttribute("aria-atomic", "true");
+
+    toastEl.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    `;
+
+    container.appendChild(toastEl);
+    const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    toast.show();
+
+    toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+}
+
+function mostrarConfirmModal(title, message, onConfirm) {
+    // Procura o modal, se não existir, cria no final do body sem afetar outras divs
+    let modalEl = document.getElementById("globalConfirmModal");
+    if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.id = "globalConfirmModal";
+        modalEl.className = "modal fade";
+        modalEl.tabIndex = "-1";
+        document.body.appendChild(modalEl);
+    }
+
+    // Design Dark Premium Corporativo (Borda Vermelha)
+    modalEl.innerHTML = `
+        <div class="modal-dialog text-light modal-dialog-centered">
+            <div class="modal-content bg-dark border border-danger shadow-lg" style="border-radius: 12px;">
+                <div class="modal-header border-secondary bg-black bg-gradient py-3" style="border-top-left-radius: 11px; border-top-right-radius: 11px;">
+                    <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2">
+                        ⚠️ ${title}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body fs-5 py-4 px-4 bg-dark bg-gradient">
+                    <p class="mb-0 text-secondary-emphasis" style="line-height: 1.6;">${message}</p>
+                </div>
+                <div class="modal-footer border-secondary bg-black bg-gradient py-3">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger px-4 fw-bold shadow-sm" id="btnConfirmarAcao">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    document.getElementById("btnConfirmarAcao").onclick = () => {
+        modal.hide();
+        onConfirm();
+    };
+}
+
+function mostrarPromptModal(title, message, onConfirm) {
+    // Procura o modal, se não existir, cria no final do body sem afetar outras divs
+    let modalEl = document.getElementById("globalPromptModal");
+    if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.id = "globalPromptModal";
+        modalEl.className = "modal fade";
+        modalEl.tabIndex = "-1";
+        document.body.appendChild(modalEl);
+    }
+
+    // Design Dark Loja (Borda Dourada/Warning)
+    modalEl.innerHTML = `
+        <div class="modal-dialog text-light modal-dialog-centered">
+            <div class="modal-content bg-dark border border-warning shadow-lg" style="border-radius: 12px;">
+                <div class="modal-header border-secondary bg-black bg-gradient py-3" style="border-top-left-radius: 11px; border-top-right-radius: 11px;">
+                    <h5 class="modal-title fw-bold text-warning d-flex align-items-center gap-2">
+                        🛒 ${title}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-4 px-4 bg-dark bg-gradient">
+                    <label class="form-label fw-semibold text-light mb-2 fs-5">${message}</label>
+                    <input type="number" id="promptInput" class="form-control form-control-lg text-center fw-bold text-warning bg-black border-secondary" value="1" min="1" style="max-width: 150px; margin: 0 auto; font-size: 1.5rem;">
+                </div>
+                <div class="modal-footer border-secondary bg-black bg-gradient py-3">
+                    <button type="button" class="btn btn-outline-secondary px-4 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning px-4 fw-bold shadow-sm text-dark" id="btnPromptConfirmar">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    document.getElementById("btnPromptConfirmar").onclick = () => {
+        const val = document.getElementById("promptInput").value;
+        modal.hide();
+        onConfirm(val);
+    };
+}
+async function loginCliente(event) {
+    event.preventDefault();
     const email = document.getElementById("loginEmail").value;
     const senha = document.getElementById("loginSenha").value;
 
     try {
-        // [Passo 2 da imagem] Envia as credenciais para o backend FastAPI
-        // (Ajuste a URL se a sua porta for diferente de 8000)
-        const response = await fetch("http://localhost:8000/cliente/login", {
+        const resposta = await fetch("http://localhost:8000/cliente/login", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                nome: "Temporario", // Preenche os campos obrigatórios do seu schema CriarCliente
-                email: email,
-                senha: senha,
-                dataDeNascimento: "2000-01-01",
-                genero: "N/A"
-            })
-        });
-
-        const dados = await response.json();
-
-        if (response.ok) {
-            // [Passo 4 da imagem] Armazena o token no localStorage
-            localStorage.setItem("access_token", dados.access_token);
-
-            alert("Login realizado com sucesso!");
-            // Redireciona para a página principal ou painel da loja
-            window.location.href = "index.html";
-        } else {
-            alert(dados.detail || "Erro ao fazer login. Verifique suas credenciais.");
-        }
-    } catch (error) {
-        console.error("Erro na requisição:", error);
-        alert("Não foi possível conectar ao servidor.");
-    }
-}
-
-// Extra: Função de Sair [Passo 7 da imagem]
-function sairDoSistema() {
-    localStorage.removeItem("access_token");
-    window.location.href = "login.html";
-}
-
-function logoutCliente() {
-    localStorage.removeItem("clienteLogado");
-    alert("Sessão encerrada.");
-    window.location.reload();
-}
-
-async function comprarCarta(cartaId) {
-    const clienteLogado = JSON.parse(localStorage.getItem("clienteLogado"));
-
-    if (!clienteLogado) {
-        alert("Ação negada! Você precisa estar logado no sistema para comprar cartas.");
-        window.location.href = "login.html";
-        return;
-    }
-
-    const qtdInformada = prompt("Quantas unidades desta carta deseja comprar?", "1");
-    if (qtdInformada === null) return;
-    const quantidade = parseInt(qtdInformada);
-    if (isNaN(quantidade) || quantidade <= 0) {
-        alert("Quantidade inválida informada.");
-        return;
-    }
-
-    try {
-        const resposta = await fetch(API_COMPRAS, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                cliente_id: clienteLogado.id,
-                carta_id: cartaId,
-                quantidade: quantidade
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, senha })
         });
 
         if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao processar compra. Verifique o estoque da carta.");
+            throw new Error("E-mail ou senha incorretos! Tente novamente.");
         }
 
-        alert("Compra efetuada com sucesso!");
-        listarCartas();
-
+        const dados = await resposta.json();
+        localStorage.setItem("clienteToken", dados.access_token);
+        localStorage.setItem("clienteLogado", JSON.stringify({
+            id: dados.id,
+            nome: dados.nome
+        }));
+        mostrarToast("Login realizado com sucesso!", "success");
+        setTimeout(() => window.location.href = "index.html", 1000);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
+}
+
+function logoutCliente() {
+    localStorage.removeItem("clienteToken");
+    mostrarToast("Sessão encerrada.", "info");
+    setTimeout(() => window.location.reload(), 1000);
+}
+
+async function comprarCarta(cartaId) {
+   const token = localStorage.getItem("clienteToken");
+    if (!token) {
+        mostrarToast("Ação negada! Você precisa estar logado no sistema para comprar cartas.", "warning");
+        setTimeout(() => window.location.href = "login.html", 1500);
+        return;
+    }
+
+    const payload = parseJwt(token);
+    
+    mostrarPromptModal("Comprar Carta", "Quantas unidades desta carta deseja comprar?", async (qtdInformada) => {
+        const quantidade = parseInt(qtdInformada);
+        
+        if (isNaN(quantidade) || quantidade <= 0) {
+            mostrarToast("Quantidade inválida informada.", "warning");
+            return;
+        }
+
+        try {
+            const resposta = await fetch(API_COMPRAS, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    cliente_id: payload.id,
+                    carta_id: cartaId,
+                    quantidade: quantidade
+                })
+            });
+
+            if (!resposta.ok) {
+                const erro = await resposta.json();
+                throw new Error(erro.detail || "Erro ao processar compra. Verifique o estoque da carta.");
+            }
+
+            mostrarToast("Compra efetuada com sucesso!", "success");
+            listarCartas();
+
+        } catch (erro) {
+            mostrarToast(erro.message, "danger");
+        }
+    });
 }
 //clientes ussa
 async function listarCartas(page = 1) {
@@ -179,8 +287,7 @@ async function listarCartas(page = 1) {
     } catch (erro) {
         const erroDiv = document.getElementById("erro");
         if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
+            mostrarToast(erro.message, "danger");
         }
     }
 }
@@ -222,7 +329,7 @@ async function pesquisarCartas(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarCartas(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -240,25 +347,25 @@ async function pesquisarCartas(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarCartas(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
     } catch (erro) {
         const erroDiv = document.getElementById("erro");
         if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
+            mostrarToast(erro.message, "danger");
         }
     }
 }
 
 async function criarCarta(event){
     event.preventDefault();
+    const token = localStorage.getItem("funcionarioToken");
 
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
-    const defensa = parseInt(document.getElementById("defesa").value);
+    const defesa = parseInt(document.getElementById("defesa").value);
     const preco = parseFloat(document.getElementById("preco").value);
     const quantidade = parseInt(document.getElementById("quantidade").value);
 
@@ -266,15 +373,10 @@ async function criarCarta(event){
         const resposta = await fetch(API_CARTAS, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token 
             },
-            body: JSON.stringify({
-                nome: nome,
-                atk: atk,
-                defesa: defensa,
-                preco: preco,
-                quantidade: quantidade
-            })
+            body: JSON.stringify({ nome, atk, defesa, preco, quantidade })
         });
 
         if (!resposta.ok) {
@@ -283,10 +385,10 @@ async function criarCarta(event){
         }
 
         const carta = await resposta.json();
-        alert(`Carta criada com sucesso! ID: ${carta.id}`);
-        window.location.href = "index.html";
+        mostrarToast(`Carta criada com sucesso! ID: ${carta.id}`, "success");
+        setTimeout(()=> window.location.href = "dashboard-funcionario.html", 1500);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -302,11 +404,12 @@ async function carregarCarta(id) {
         document.getElementById("preco").value = carta.preco;
         document.getElementById("quantidade").value = carta.quantidade;
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 async function editarCarta(id) {
+    const token = localStorage.getItem("funcionarioToken");
     const nome = document.getElementById("nome").value;
     const atk = parseInt(document.getElementById("atk").value);
     const defesa = parseInt(document.getElementById("defesa").value);
@@ -317,15 +420,10 @@ async function editarCarta(id) {
         const resposta = await fetch(`${API_CARTAS}/${id}`, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
-            body: JSON.stringify({
-                nome: nome,
-                atk: atk,
-                defesa: defesa,
-                preco: preco,
-                quantidade: quantidade
-            })
+            body: JSON.stringify({ nome, atk, defesa, preco, quantidade })
         });
 
         if (!resposta.ok) {
@@ -333,33 +431,37 @@ async function editarCarta(id) {
             throw new Error(erro.detail || "Erro ao atualizar carta");
         }
 
-        alert("Carta atualizada com sucesso!");
-        window.location.href = "index.html";
+        mostrarToast("Carta atualizada com sucesso!", "success");
+        setTimeout(()=> window.location.href = "dashboard-funcionario.html", 1500);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 async function deletarCarta(id) {
-    if (!confirm("Tem certeza que deseja excluir esta carta?")) {
-        return;
-    }
+    mostrarConfirmModal(
+        "Excluir Carta", 
+        "Tem certeza que deseja excluir esta carta? ESTA AÇÃO NÃO PODE SER DESFEITA.", 
+        async () => {
+            const token = localStorage.getItem("funcionarioToken");
+            try {
+                const resposta = await fetch(`${API_CARTAS}/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
 
-    try {
-        const resposta = await fetch(`${API_CARTAS}/${id}`, {
-            method: "DELETE"
-        });
+                if (!resposta.ok) {
+                    const erro = await resposta.json();
+                    throw new Error(erro.detail || "Erro ao excluir carta");
+                }
 
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao excluir carta");
+                mostrarToast("Carta excluída com sucesso!", "success");
+                listarCartasAdmin();
+            } catch (erro) {
+                mostrarToast(erro.message, "danger");
+            }
         }
-
-        alert("Carta excluída com sucesso!");
-        listarCartas();
-    } catch (erro) {
-        alert(erro.message);
-    }
+    );
 }
 
 async function criarCliente(event){
@@ -372,7 +474,7 @@ async function criarCliente(event){
     const genero = document.getElementById("genero").value;
 
     try {
-        const resposta = await fetch(API_CLIENTES, {
+        const resposta = await fetch(API_CLIENTES, {    
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -390,10 +492,10 @@ async function criarCliente(event){
             throw new Error(erro.detail || "Erro ao salvar cliente");
         }
         const cliente = await resposta.json();
-        alert("Cliente criado com sucesso! ID: " + cliente.id);
-        window.location.href = "clientes.html";
+        mostrarToast("Cliente criado com sucesso! ID: " + cliente.id, "success");
+        setTimeout(()=> window.location.href = "login.html", 3000); 
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -407,11 +509,12 @@ async function carregarCliente(id) {
         document.getElementById("dataDeNascimento").value = cliente.dataDeNascimento;
         document.getElementById("genero").value = cliente.genero;
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 async function editarCliente(id) {
+    const token = localStorage.getItem("funcionarioToken");
     const nome = document.getElementById("nome").value;
     const dataDeNascimento = document.getElementById("dataDeNascimento").value;
     const genero = document.getElementById("genero").value;
@@ -420,13 +523,10 @@ async function editarCliente(id) {
         const resposta = await fetch(`${API_CLIENTES}/${id}`, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
             },
-            body: JSON.stringify({
-                nome: nome,
-                dataDeNascimento: dataDeNascimento,
-                genero: genero
-            })
+            body: JSON.stringify({ nome, dataDeNascimento, genero })
         });
 
         if (!resposta.ok) {
@@ -434,55 +534,70 @@ async function editarCliente(id) {
             throw new Error(erro.detail || "Erro ao atualizar cliente");
         }
 
-        alert("Cliente atualizado com sucesso!");
-        window.location.href = "clientes.html";
+        mostrarToast("Cliente atualizado com sucesso!", "success");
+        setTimeout(() => window.location.href = "dashboard-funcionario.html", 1500);
     } catch (erro) {
-        alert(erro.message);
+        mostrarToast(erro.message, "danger");
     }
 }
 
 async function deletarCliente(id) {
-    if (!confirm("Tem certeza que deseja excluir este cliente?")) {
-        return;
-    }
+    mostrarConfirmModal(
+        "Remover Cliente", 
+        "Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita.", 
+        async () => {
+            const token = localStorage.getItem("funcionarioToken");
+            try {
+                const resposta = await fetch(`${API_CLIENTES}/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": "Bearer " + token }
+                });
 
-    try {
-        const resposta = await fetch(`${API_CLIENTES}/${id}`, {
-            method: "DELETE"
-        });
+                if (!resposta.ok) {
+                    const erro = await resposta.json();
+                    throw new Error(erro.detail || "Erro ao excluir cliente");
+                }
 
-        if (!resposta.ok) {
-            const erro = await resposta.json();
-            throw new Error(erro.detail || "Erro ao excluir cliente");
+                mostrarToast("Cliente excluído com sucesso!", "success");
+                listarClientesAdmin();
+            } catch (erro) {
+                mostrarToast(erro.message, "danger");
+            }
         }
-
-        alert("Cliente excluído com sucesso!");
-        listarClientes();
-    } catch (erro) {
-        alert(erro.message);
-    }
+    );
 }
 
-function loginFuncionario(event) {
+async function loginFuncionario(event) {
     event.preventDefault();
     const usuario = document.getElementById("funcUsuario").value;
     const senha = document.getElementById("funcSenha").value;
     const campoErro = document.getElementById("erroFuncionario");
 
     campoErro.classList.add("d-none");
+    try {
+        const resposta = await fetch("http://localhost:8000/cliente/funcionario/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ usuario, senha })
+        });
 
-    if (senha === "kaibamen") {
-        localStorage.setItem("funcionarioAutenticado", JSON.stringify({ user: usuario, loginAt: new Date() }));
-        window.location.href = "dashboard-funcionario.html";
-    } else {
-        campoErro.innerText = "Chave de Acesso Inválida para Funcionários!";
-        campoErro.classList.remove("d-none");
+        if (!resposta.ok) {
+            throw new Error("Chave de acesso inválida para Funcionários!");
+        }
+        const dados = await resposta.json();
+
+        localStorage.setItem("funcionarioToken", dados.access_token);
+
+        mostrarToast("Autenticação realizada com sucesso! Entrando no painel...", "success");
+        setTimeout(() => window.location.href = "dashboard-funcionario.html", 1000);
+    } catch (erro) {
+        mostrarToast(erro.message, "danger");
     }
 }
-
 function logoutFuncionario() {
-    localStorage.removeItem("funcionarioAutenticado");
-    window.location.href = "login-funcionario.html";
+    localStorage.removeItem("funcionarioToken");
+    mostrarToast("Autenticação encerrada! Redirecionando para a página de login...", "success");
+    setTimeout(() => window.location.href = "login-funcionario.html", 1000);
 }
 
 function mudarPainelAdmin(painel) {
@@ -522,7 +637,7 @@ async function listarCartasAdmin(page = 1) {
                 <td>${carta.quantidade} un</td>
                 <td>
                     <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm me-1">✏️ Editar</a>
-                    <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
+                    <button type="button" onclick="event.preventDefault(); deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
                 </td>
             `;
         });
@@ -557,11 +672,7 @@ async function listarCartasAdmin(page = 1) {
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -589,7 +700,7 @@ async function pesquisarCartasAdmin(page = 1) {
                     <td>${carta.quantidade} un</td>
                     <td>
                         <a href="editar.html?id=${carta.id}" class="btn btn-warning btn-sm me-1">✏️ Editar</a>
-                        <button onclick="deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Excluir</button>
+                        <button type="button" onclick="event.preventDefault(); deletarCarta(${carta.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                     </td>
             `;
         });
@@ -601,7 +712,7 @@ async function pesquisarCartasAdmin(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarCartasAdmin(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -619,16 +730,12 @@ async function pesquisarCartasAdmin(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarCartasAdmin(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -655,7 +762,7 @@ async function listarClientesAdmin(page = 1) {
                 <td>${cliente.genero}</td>
                 <td>
                     <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
-                    <button onclick="deletarClienteAdmin(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                    <button type="button" onclick="event.preventDefault(); deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                 </td>
             </tr>
             `;
@@ -668,7 +775,7 @@ async function listarClientesAdmin(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarClientesAdmin(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -677,7 +784,7 @@ async function listarClientesAdmin(page = 1) {
                 btn.innerText = p;
                 btn.disabled = (p === "..." || parseInt(p) === resultado.page);
                 if (p !== "...") {
-                    btn.onclick = () => listarClientesAdmin(parseInt(p));
+                    btn.onclick = () => pesquisarClientesAdmin(parseInt(p));
                 }
                 paginacaoDiv.appendChild(btn);
             });
@@ -686,16 +793,12 @@ async function listarClientesAdmin(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarClientesAdmin(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
 
@@ -723,7 +826,7 @@ async function pesquisarClientesAdmin(page = 1) {
                     <td>${cliente.genero}</td>
                     <td>
                         <a href="editarCliente.html?id=${cliente.id}" class="btn btn-warning btn-sm me-1">✏️ Alterar</a>
-                        <button onclick="deletarClienteAdmin(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
+                        <button type="button" onclick="event.preventDefault(); deletarCliente(${cliente.id})" class="btn btn-danger btn-sm">🗑️ Remover</button>
                     </td>
             </tr>
             `;
@@ -736,7 +839,7 @@ async function pesquisarClientesAdmin(page = 1) {
             btnVoltar.className = "btn btn-outline-secondary btn-sm me-1";
             btnVoltar.innerHTML = "&laquo;";
             btnVoltar.disabled = resultado.page <= 1;
-            btnVoltar.onclick = () => listarCartas(resultado.page - 1);
+            btnVoltar.onclick = () => pesquisarClientesAdmin(resultado.page - 1);
             paginacaoDiv.appendChild(btnVoltar);
 
             resultado.pages.forEach(p => {
@@ -754,15 +857,11 @@ async function pesquisarClientesAdmin(page = 1) {
             btnAvancar.className = "btn btn-outline-secondary btn-sm";
             btnAvancar.innerHTML = "&raquo;";
             btnAvancar.disabled = resultado.page >= resultado.total_pages;
-            btnAvancar.onclick = () => listarCartas(resultado.page + 1);
+            btnAvancar.onclick = () => pesquisarClientesAdmin(resultado.page + 1);
             paginacaoDiv.appendChild(btnAvancar);
         }
 
     } catch (erro) {
-        const erroDiv = document.getElementById("erro");
-        if (erroDiv) {
-            erroDiv.classList.remove("d-none");
-            erroDiv.innerText = erro.message;
-        }
+        mostrarToast(erro.message, "danger");
     }
 }
